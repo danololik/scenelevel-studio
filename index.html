@@ -17,11 +17,23 @@
 <body>
   <header class="header">
     <div class="identity"><span class="identity-icon">SL</span><span class="identity-text"><strong>SceneLevel <em>Studio</em></strong><small>Creative workspace</small></span></div>
-    <div class="header-actions"><span class="save-state" id="save-state">Připraveno</span><button id="project-download" class="ghost secondary" title="Záloha celého projektu včetně fotografií">Záloha projektu</button><label class="ghost secondary file-label" for="project-import">Obnovit projekt</label><input id="project-import" type="file" accept="application/json,.json" hidden /></div>
+    <div class="header-actions"><button type="button" id="go-home" class="ghost secondary" hidden>← Projekty</button><span class="save-state" id="save-state">Připraveno</span><button id="project-download" hidden class="ghost secondary" title="Záloha celého projektu včetně fotografií">Záloha projektu</button><label class="ghost secondary file-label" for="project-import">Obnovit projekt</label><input id="project-import" type="file" accept="application/json,.json" hidden /></div>
   </header>
-  <main>
+  <section id="dashboard" class="dashboard" aria-label="SceneLevel Studio – projekty">
+    <div class="dashboard-heading"><div><span class="eyebrow">SCENELEVEL STUDIO</span><h1>Co dnes vytvoříme?</h1><p>Vyber typ příspěvku nebo pokračuj v rozpracovaném projektu.</p></div></div>
+    <h2>Nový projekt</h2>
+    <div class="template-grid">
+      <button type="button" class="template-card" data-create="birthday"><span class="template-icon">🎂</span><strong>Narozeniny</strong><span>Úvodní snímky + závěrečný CTA</span></button>
+      <button type="button" class="template-card" data-create="news"><span class="template-icon">🎬</span><strong>Filmová novinka</strong><span>Novinka + závěrečný CTA</span></button>
+      <button type="button" class="template-card" data-create="memorial"><span class="template-icon">🕊</span><strong>In Memoriam</strong><span>Vzpomínka, role a Rest in Peace</span></button>
+      <button type="button" class="template-card" data-create="blank"><span class="template-icon">✳</span><strong>Prázdný projekt</strong><span>Začni jedním snímkem a přidávej další</span></button>
+    </div>
+    <div class="dashboard-list-head"><h2>Moje projekty</h2><small>Uloženo jen na tomto zařízení · pro přenos použij zálohu</small></div>
+    <div id="project-list" class="project-list"></div>
+  </section>
+  <main id="editor" hidden>
     <aside class="sidebar">
-      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.2</span></div>
+      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.3</span></div>
       <section class="panel">
         <label for="project-title">Název projektu</label>
         <input id="project-title" type="text" placeholder="Např. Narozeniny – 15. listopadu" maxlength="120" />
@@ -48,7 +60,7 @@
         <div class="color-line"><label for="background">Barva pozadí</label><input id="background" type="color" value="#000000" /></div>
       </section>
       <section class="panel">
-        <strong>Logo SceneLevel</strong><p class="small-muted">Originální bílé SceneLevel logo je nastavené automaticky. Vlastní PNG / SVG můžeš nahrát jako volitelnou náhradu pro tento projekt.</p>
+        <strong>Logo SceneLevel</strong><p class="small-muted">Na běžných snímcích je bílé logo, na závěrečném CTA barevné. Vlastní PNG / SVG můžeš nahrát jako náhradu pro celý projekt.</p>
         <label for="logo-upload" class="ghost secondary file-label wide">Nahrát logo</label><input id="logo-upload" type="file" accept="image/png,image/webp,image/svg+xml" hidden />
       </section>
     </aside>
@@ -61,7 +73,7 @@
       <div class="add-slide-row"><select id="new-slide-type" aria-label="Šablona pro nový snímek"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – role</option><option value="closing">In Memoriam – závěr</option><option value="cta">Závěrečný CTA</option></select><button class="ghost" id="add-slide">＋ Přidat snímek</button></div>
     </section>
   </main>
-  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · bez analytiky</span></footer>
+  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.3</span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

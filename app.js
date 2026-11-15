@@ -4,21 +4,30 @@
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
+const DEFAULT_CTA_LOGO = './assets/logo_name_colour.svg';
 const TYPES = {
   birthday: { label: 'Narozeniny', fields: [ ['primary','Jméno'], ['secondary','Věk / druhý řádek'], ['detail','Známé filmy a seriály'] ], defaults: {primary:'Robert Patrick',secondary:'turns 68 today',detail:'Terminator 2 · The X-Files · Peacemaker'}, defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'} },
   news: { label:'Filmová novinka', fields:[['primary','Hlavní titulek'],['secondary','Doplňující titulek'],['detail','Další informace']],defaults:{primary:'Jack Sparrow could return',secondary:'',detail:''},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'}},
   memorial: { label:'In Memoriam', fields:[['primary','Jméno'],['secondary','Roky života'],['detail','Doplňující text']],defaults:{primary:'Jméno herce',secondary:'1950 – 2026',detail:''},defaultsColor:{primary:'#ffffff',secondary:'#d2d2d2',detail:'#aaa'}},
   role: { label:'Nejznámější role', fields:[['primary','Jméno postavy'],['secondary','Film / seriál'],['detail','Doplňující text']],defaults:{primary:'Jméno postavy',secondary:'Název filmu nebo seriálu',detail:''},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'}},
   closing: { label:'Rest in Peace', fields:[['primary','Hlavní text'],['secondary','Jméno'],['detail','Roky života']],defaults:{primary:'REST IN PEACE',secondary:'Jméno herce',detail:''},defaultsColor:{primary:'#ffffff',secondary:'#c8c8c8',detail:'#b0b0b0'}},
-  cta: { label:'Závěrečný CTA', fields:[['primary','Slogan'],['secondary','Webová adresa'],['detail','Závěrečný text']],defaults:{primary:'TRACK MORE.\nDISCOVER MORE.',secondary:'SCENELEVEL.COM',detail:'Find out more at scenelevel.com'},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#ffffff'} }
+  cta: { label:'Závěrečný CTA', fields:[['primary','Slogan'],['secondary','Webová adresa'],['detail','Závěrečný text']],defaults:{primary:'TRACK MORE.\nDISCOVER MORE.',secondary:'SCENELEVEL.COM',detail:'Find out who you share a birthday with at:\nscenelevel.com'},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#ffffff'} }
 };
 function makeSlide(type='birthday'){
   const t=TYPES[type];
   return {id:makeId(),type,values:{...t.defaults}, highlights:{},photoData:'',zoom:100,x:0,y:0,bg:'#000000'};
 }
 function makeId(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
-function makeProject(){return {version:1,title:'Nový SceneLevel carousel',format:'4:5',logoData:'',slides:[makeSlide('birthday'),makeSlide('cta')],active:0};}
+function makeProject(template='birthday'){
+  const slides=template==='news'?[makeSlide('news'),makeSlide('cta')]:template==='memorial'?[makeSlide('memorial'),makeSlide('role'),makeSlide('closing')]:template==='blank'?[makeSlide('birthday')]:[makeSlide('birthday'),makeSlide('cta')];
+  if(template==='news')slides[1].values.detail='Discover more film news at:\nscenelevel.com';
+  if(template==='blank')slides[0].values={primary:'',secondary:'',detail:''};
+  const names={birthday:'Narozeninový carousel',news:'Filmová novinka',memorial:'In Memoriam',blank:'Nový projekt'};
+  return {id:makeId(),version:1,title:names[template]||names.blank,format:'4:5',logoData:'',slides,active:0,createdAt:Date.now(),updatedAt:Date.now()};
+}
 let state=makeProject();
+let projectList=[];
+let openedProject=false;
 let ready=false;
 let saveTimer=null;
 let toastTimer=null;
@@ -45,7 +54,7 @@ function getImage(src){
   if(imgCache.size>32){for(const key of imgCache.keys()){if(key!==src){imgCache.delete(key);break;}}}
   return entry;
 }
-async function waitForImages(slide){await Promise.all([slide.photoData,state.logoData||DEFAULT_LOGO].filter(Boolean).map(s=>getImage(s).promise));}
+async function waitForImages(slide){await Promise.all([slide.photoData,state.logoData||(slide.type==='cta'?DEFAULT_CTA_LOGO:DEFAULT_LOGO)].filter(Boolean).map(s=>getImage(s).promise));}
 let rendering=false;
 function queuePreview(){if(rendering)return;rendering=true;requestAnimationFrame(()=>{rendering=false;drawPreview();});}
 function drawPreview(){const d=dims();if(canvas.width!==d.w||canvas.height!==d.h){canvas.width=d.w;canvas.height=d.h;}renderSlide(ctx,current(),d.w,d.h);}
@@ -137,33 +146,86 @@ function renderSlide(c,slide,w,h){
   let y=start+logoHeight+logoGap;
   for(let i=0;i<layouts.length;i++){y+=gaps[i];drawRich(c,slide,layouts[i],y,w);y+=layouts[i].height;}
 }
-function renderCTA(c,slide,w,h,photoImg,bg){
-  if(photoImg){
-    // The photo blends into the same dark background at BOTH edges, like the PSD.
-    // Transitions are tied to the photo region, not to the surrounding text.
-    const photoTop=Math.round(h*0.29);
-    const photoBottom=Math.round(h*0.95);
-    const photoHeight=photoBottom-photoTop;
-    drawImageCover(c,photoImg,0,photoTop,w,photoHeight,slide);
-    const [r,g,b]=rgb(bg);
-    const upper=Math.round(photoHeight*0.40);
-    const lower=Math.round(photoHeight*0.34);
-    const topFade=c.createLinearGradient(0,photoTop,0,photoTop+upper);
-    topFade.addColorStop(0,`rgba(${r},${g},${b},1)`);
-    topFade.addColorStop(1,`rgba(${r},${g},${b},0)`);
-    c.fillStyle=topFade;c.fillRect(0,photoTop,w,upper+1);
-    const bottomFade=c.createLinearGradient(0,photoBottom-lower,0,photoBottom);
-    bottomFade.addColorStop(0,`rgba(${r},${g},${b},0)`);
-    bottomFade.addColorStop(1,`rgba(${r},${g},${b},1)`);
-    c.fillStyle=bottomFade;c.fillRect(0,photoBottom-lower,w,lower+1);
+function drawCtaLogo(c,top,w,logo){
+  const entry=getImage(logo||DEFAULT_CTA_LOGO);
+  if(!entry?.loaded)return;
+  const image=entry.image;
+  const scale=Math.min(w*.49/image.width,(w*.145)/image.height);
+  const dw=image.width*scale,dh=image.height*scale;
+  c.drawImage(image,(w-dw)/2,top,dw,dh);
+}
+function defaultCtaColor(slide,field,index){
+  const text=String(slide.values[field]||'');
+  const color='#ffffff';
+  if(field==='primary'){
+    // In the original design, the word before MORE is orange on each line.
+    const lines=text.split('\n');let offset=0;
+    for(const line of lines){const m=line.match(/^(.*?)\s+MORE\b/i);
+      if(m&&index>=offset&&index<offset+m[1].length)return ORANGE;
+      offset+=line.length+1;
+    }
+    return color;
   }
-  drawLogo(c,h===1920?140:70,w,state.logoData);
-  const maxW=w-100;
-  const top=h===1920?350:250;
-  const one=fitText(c,slide,'primary',maxW,82),two=fitText(c,slide,'secondary',maxW,64),three=fitText(c,slide,'detail',maxW,43);
-  if(one)drawRich(c,slide,one,top,w);
-  if(two)drawRich(c,slide,two,top+(one?.height||0)+55,w);
-  if(three)drawRich(c,slide,three,h-(h===1920?285:165)-three.height,w);
+  if(field==='secondary'){
+    const match=/LEVEL/i.exec(text);return match&&index>=match.index&&index<match.index+match[0].length?ORANGE:color;
+  }
+  if(field==='detail'){
+    const lower=text.toLowerCase();
+    // The footer's domain is orange except for the .com suffix.
+    let at=lower.indexOf('scenelevel.com');
+    if(at!==-1&&index>=at&&index<at+'scenelevel'.length)return ORANGE;
+    return color;
+  }
+  return color;
+}
+function drawCtaField(c,slide,field,top,maxHeight,maxW,w,baseSize,lineMult=1.17){
+  const txt=String(slide.values[field]||'');if(!txt.trim())return;
+  let size=baseSize,lines=[];
+  do{
+    lines=getLines(c,txt,size,'Anton',maxW);
+    if(lines.length*size*lineMult<=maxHeight&&lines.every(line=>line.reduce((sum,ch)=>sum+ch.width,0)<=maxW+1))break;
+    size-=2;
+  }while(size>=27);
+  cssFont(c,'Anton',size);c.textBaseline='alphabetic';
+  const gap=size*lineMult;
+  const yStart=top+(maxHeight-lines.length*gap)/2+size;
+  for(const [lineIndex,line] of lines.entries()){
+    let x=(w-line.reduce((sum,ch)=>sum+ch.width,0))/2;
+    const y=yStart+lineIndex*gap;
+    for(const ch of line){
+      c.fillStyle=safeColor(slide.highlights?.[field]?.[ch.index]||defaultCtaColor(slide,field,ch.index));
+      c.fillText(ch.ch,x,y);x+=ch.width;
+    }
+  }
+}
+function renderCTA(c,slide,w,h,photoImg,bg){
+  // Source reference: SceneLevel's actual Instagram closing card.
+  // The logo, two-tone slogan, two-tone URL and TWO-LINE footer are separate zones.
+  const tall=h/w>1.5;
+  const topPhoto=tall?Math.round(h*.36):Math.round(h*.40);
+  const bottomPhoto=tall?Math.round(h*.89):Math.round(h*.91);
+  if(photoImg){
+    drawImageCover(c,photoImg,0,topPhoto,w,bottomPhoto-topPhoto,slide);
+    const [r,g,b]=rgb(bg);
+    const topLength=tall?210:170;
+    const bottomLength=tall?260:195;
+    const upper=c.createLinearGradient(0,topPhoto,0,topPhoto+topLength);
+    upper.addColorStop(0,`rgba(${r},${g},${b},1)`);
+    upper.addColorStop(.4,`rgba(${r},${g},${b},.72)`);
+    upper.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    c.fillStyle=upper;c.fillRect(0,topPhoto,w,topLength+1);
+    const lower=c.createLinearGradient(0,bottomPhoto-bottomLength,0,bottomPhoto);
+    lower.addColorStop(0,`rgba(${r},${g},${b},0)`);
+    lower.addColorStop(.62,`rgba(${r},${g},${b},.77)`);
+    lower.addColorStop(1,`rgba(${r},${g},${b},1)`);
+    c.fillStyle=lower;c.fillRect(0,bottomPhoto-bottomLength,w,bottomLength+1);
+  }
+  drawCtaLogo(c,tall?82:55,w,state.logoData);
+  // Fixed, non-overlapping text areas reproduce the design of the PSD reference.
+  drawCtaField(c,slide,'primary',tall?325:257,tall?235:180,w-95,w,tall?91:91,1.12);
+  drawCtaField(c,slide,'secondary',tall?552:456,tall?105:102,w-85,w,91);
+  // No footer text is placed across the middle of the image.
+  drawCtaField(c,slide,'detail',tall?h-260:h-184,tall?170:142,w-95,w,tall?52:52,1.28);
 }
 async function initFonts(){try{await Promise.all([document.fonts.load('90px Anton'),document.fonts.load('60px Oswald')]);}catch{}queuePreview();}
 function renderFields(){
@@ -194,10 +256,60 @@ function renderSlides(){
   $('move-left').disabled=state.active===0;$('move-right').disabled=state.active>=state.slides.length-1;$('delete-slide').disabled=state.slides.length<=1;
 }
 function syncUI(){ $('project-title').value=state.title;$('format').value=state.format;rememberedSelection=null;renderFields();renderSlides();queuePreview(); }
-function scheduleSave(){if(!ready)return;$('save-state').textContent='Ukládání…';clearTimeout(saveTimer);saveTimer=setTimeout(saveProject,500);}
-function db(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window))return reject(Error('IndexedDB unavailable'));const r=indexedDB.open('scenelevel-studio-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-async function loadProject(){const database=await db();try{return await new Promise((resolve,reject)=>{const transaction=database.transaction('kv','readonly');const req=transaction.objectStore('kv').get('project');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}finally{database.close();}}
-async function saveProject(){if(!ready)return;let database;try{database=await db();await new Promise((resolve,reject)=>{const tx=database.transaction('kv','readwrite');tx.objectStore('kv').put(state,'project');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});$('save-state').textContent='Uloženo v zařízení ✓';}catch(e){$('save-state').textContent='Uložení selhalo';toast('Koncept se nepodařilo uložit. Stáhni si raději zálohu projektu.');console.error(e);}finally{database?.close();}}
+function scheduleSave(){if(!ready||!openedProject)return;$('save-state').textContent='Ukládání…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveProject().catch(console.error);},450);}
+function db(){return new Promise((resolve,reject)=>{
+  if(!('indexedDB'in window))return reject(Error('IndexedDB unavailable'));
+  const req=indexedDB.open('scenelevel-studio-v1',2);
+  req.onupgradeneeded=()=>{const database=req.result;if(!database.objectStoreNames.contains('kv'))database.createObjectStore('kv');if(!database.objectStoreNames.contains('projects'))database.createObjectStore('projects',{keyPath:'id'});};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+});}
+async function transact(store,mode,fn){
+  const database=await db();try{return await new Promise((resolve,reject)=>{
+    const tx=database.transaction(store,mode);const req=fn(tx.objectStore(store));let result;
+    if(req){req.onsuccess=()=>{result=req.result;};req.onerror=()=>reject(req.error);}
+    tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+  });}finally{database.close();}
+}
+async function listProjects(){return await transact('projects','readonly',store=>store.getAll());}
+async function saveProject(){if(!ready||!openedProject)return;
+  const snapshot=structuredClone(state);snapshot.updatedAt=Date.now();
+  try{await transact('projects','readwrite',store=>store.put(snapshot));
+    if(state.id===snapshot.id){state.updatedAt=snapshot.updatedAt;$('save-state').textContent='Uloženo ✓';}
+  }catch(e){$('save-state').textContent='Uložení selhalo';toast('Projekt se nepodařilo uložit. Stáhni si raději zálohu!');throw e;}
+}
+async function flushProject(){clearTimeout(saveTimer);if(openedProject)await saveProject();}
+function labelForProject(p){const type=p.slides?.[0]?.type||'birthday';return TYPES[type]?.label||'Projekt';}
+function friendlyDate(date){try{return new Date(date).toLocaleDateString('cs-CZ',{day:'numeric',month:'short',year:'numeric'});}catch{return 'bez data';}}
+async function refreshDashboard(){
+  try{projectList=(await listProjects()).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));}catch(e){console.error(e);projectList=[];toast('Úložiště projektů není dostupné. Doporučuji používat běžné okno prohlížeče.');}
+  $('project-list').innerHTML=projectList.length?projectList.map(p=>`<div class="project-card"><div class="project-symbol">${p.slides?.[0]?.type==='news'?'🎬':p.slides?.[0]?.type==='memorial'?'🕊':'SL'}</div><div class="project-meta"><strong title="${esc(p.title)}">${esc(p.title)}</strong><span>${esc(labelForProject(p))} · ${p.slides?.length||1} snímků</span><span>Upraveno ${esc(friendlyDate(p.updatedAt||p.createdAt||Date.now()))}</span></div><div class="project-buttons"><button class="primary" data-open-project="${esc(p.id)}">Otevřít</button><button class="ghost secondary" data-copy-project="${esc(p.id)}" title="Vytvořit kopii">Kopie</button><button class="ghost project-delete" data-delete-project="${esc(p.id)}" title="Smazat projekt">Smazat</button></div></div>`).join(''):'<div class="empty-projects">Zatím žádné uložené projekty. Vyber nahoře šablonu a vytvoř první.</div>';
+  $('project-list').querySelectorAll('[data-open-project]').forEach(b=>b.addEventListener('click',()=>openProjectById(b.dataset.openProject)));
+  $('project-list').querySelectorAll('[data-copy-project]').forEach(b=>b.addEventListener('click',()=>duplicateProject(b.dataset.copyProject)));
+  $('project-list').querySelectorAll('[data-delete-project]').forEach(b=>b.addEventListener('click',()=>removeProject(b.dataset.deleteProject)));
+}
+function setScreen(showEditor){
+  openedProject=showEditor;
+  $('editor').hidden=!showEditor;$('dashboard').hidden=showEditor;
+  $('go-home').hidden=!showEditor;$('project-download').hidden=!showEditor;
+  $('save-state').textContent=showEditor?'Uloženo v zařízení ✓':'Projekty na tomto zařízení';
+  if(showEditor)requestAnimationFrame(()=>{queuePreview();window.scrollTo(0,0);});
+  else window.scrollTo(0,0);
+}
+async function openProjectById(id){try{const p=await transact('projects','readonly',store=>store.get(id));if(!validateProject(p))throw Error('Invalid project');state=p;state.active=Math.max(0,Math.min(state.active||0,state.slides.length-1));setScreen(true);syncUI();}catch(e){console.error(e);toast('Projekt se nepodařilo otevřít.');}}
+async function createProject(template){try{const p=makeProject(template);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
+async function goHome(){try{await flushProject();}catch(e){console.error(e);toast('Poslední změny nemusely být uloženy. Stáhni si zálohu projektu.');return;}setScreen(false);await refreshDashboard();}
+async function removeProject(id){const p=projectList.find(item=>item.id===id);if(!p)return;if(!confirm(`Opravdu smazat projekt „${p.title}“? Smazání nelze vrátit.`))return;try{await transact('projects','readwrite',store=>store.delete(id));await refreshDashboard();toast('Projekt byl smazán.');}catch(e){console.error(e);toast('Projekt se nepodařilo smazat.');}}
+async function duplicateProject(id){const old=projectList.find(item=>item.id===id);if(!old)return;try{const copy=structuredClone(old);copy.id=makeId();copy.title=old.title+' (kopie)';copy.createdAt=copy.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(copy));await refreshDashboard();toast('Kopie projektu připravena.');}catch(e){console.error(e);toast('Projekt nelze duplikovat.');}}
+async function migratePreviousProject(){
+  let all=await listProjects();if(all.length)return;
+  const previous=await transact('kv','readonly',store=>store.get('project'));
+  if(validateProject(previous)){
+    const p={...previous,id:makeId(),title:previous.title||'Projekt z v0.2',createdAt:Date.now(),updatedAt:Date.now()};
+    for(const slide of p.slides){if(slide.type==='cta'&&slide.values?.detail==='Find out more at scenelevel.com')slide.values.detail='Find out who you share a birthday with at:\nscenelevel.com';}
+    await transact('projects','readwrite',store=>store.put(p));
+    toast('Předchozí rozpracovaný projekt jsme zachovali v seznamu projektů.');
+  }
+}
 async function setPhoto(file){
   if(!file?.type?.startsWith('image/')){toast('Ve schránce není podporovaný obrázek.');return;}
   const destination=current();
@@ -221,6 +333,8 @@ async function pasteViaButton(){
   }catch(e){console.warn('Clipboard read unavailable',e);toast('Prohlížeč nepovolil přístup ke schránce. Na počítači zkus Ctrl+V / Cmd+V.');}
 }
 function bind(){
+  $('go-home').addEventListener('click',goHome);
+  $('dashboard').querySelectorAll('[data-create]').forEach(button=>button.addEventListener('click',()=>createProject(button.dataset.create)));
   $('project-title').addEventListener('input',e=>{state.title=e.target.value;scheduleSave();});
   $('format').addEventListener('change',e=>{state.format=e.target.value;queuePreview();scheduleSave();});
   $('slide-type').addEventListener('change',e=>{const old=current(),t=e.target.value;state.slides[state.active]={...makeSlide(t),id:old.id,photoData:old.photoData,zoom:old.zoom,x:old.x,y:old.y,bg:old.bg};syncUI();scheduleSave();});
@@ -247,7 +361,7 @@ function bind(){
   $('export-one').addEventListener('click',()=>exportOne());
   $('export-all').addEventListener('click',()=>exportAll());
   $('project-download').addEventListener('click',()=>{downloadBlob(new Blob([JSON.stringify(state)],{type:'application/json'}),`${slug(state.title)||'scenelevel'}-projekt.json`);});
-  $('project-import').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const item=JSON.parse(await file.text());if(!validateProject(item))throw Error('Invalid project');state=item;state.active=Math.min(Math.max(0,state.active||0),state.slides.length-1);syncUI();scheduleSave();toast('Projekt obnoven ze zálohy.');}catch{toast('Neplatný soubor projektu.');}e.target.value='';});
+  $('project-import').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const item=JSON.parse(await file.text());if(!validateProject(item))throw Error('Invalid project');const imported=structuredClone(item);imported.id=makeId();imported.createdAt=imported.updatedAt=Date.now();await flushProject();await transact('projects','readwrite',store=>store.put(imported));state=imported;setScreen(true);syncUI();toast('Projekt importován jako nový, ostatní projekty zůstaly zachované.');}catch{toast('Neplatný soubor projektu.');}e.target.value='';});
   let gesture=null;
   canvas.addEventListener('pointerdown',e=>{if(!current().photoData)return;gesture={x:e.clientX,y:e.clientY,ox:current().x,oy:current().y};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
   canvas.addEventListener('pointermove',e=>{if(!gesture)return;const rect=canvas.getBoundingClientRect();current().x=Math.max(-100,Math.min(100,gesture.ox+(e.clientX-gesture.x)/rect.width*200));current().y=Math.max(-100,Math.min(100,gesture.oy+(e.clientY-gesture.y)/rect.height*220));$('photo-x').value=current().x;$('photo-y').value=current().y;queuePreview();});
@@ -289,5 +403,5 @@ function writeZip(files){
   const cenSize=central.reduce((n,x)=>n+x.length,0);const end=new Uint8Array(22);put(end,0,0x06054b50,4);put(end,8,files.length,2);put(end,10,files.length,2);put(end,12,cenSize,4);put(end,16,offset,4);
   return new Blob([...local,...central,end],{type:'application/zip'});
 }
-async function exportAll(){const b=$('export-all');b.disabled=true;try{const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
-(async function boot(){bind();try{const existing=await loadProject();if(validateProject(existing))state=existing;}catch(e){console.warn('Local storage unavailable',e);$('save-state').textContent='Ukládání není dostupné';}ready=true;syncUI();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js').catch(()=>{});} })();
+async function exportAll(){const b=$('export-all');b.disabled=true;try{await flushProject();const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
+(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js').catch(()=>{});} })();
