@@ -21,7 +21,7 @@
   </header>
   <main>
     <aside class="sidebar">
-      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.1</span></div>
+      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.2</span></div>
       <section class="panel">
         <label for="project-title">Název projektu</label>
         <input id="project-title" type="text" placeholder="Např. Narozeniny – 15. listopadu" maxlength="120" />
@@ -38,14 +38,17 @@
         <div class="section-head"><strong>Fotografie</strong><button class="text-action" id="remove-image">Odstranit</button></div>
         <label class="upload" for="photo-upload"><span class="upload-icon">＋</span><span>Vybrat fotografii ze zařízení</span><small>Nikdy ji nenahráváme na server</small></label>
         <input id="photo-upload" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/avif" hidden />
-        <label for="photo-zoom">Přiblížení <output id="zoom-value">100 %</output></label><input id="photo-zoom" type="range" min="100" max="250" step="1" value="100" />
+        <button id="paste-image" type="button" class="ghost secondary wide">Vložit obrázek ze schránky</button>
+        <small class="hint">Na počítači zkopíruj obrázek a stiskni Ctrl+V (Mac: Cmd+V). Obrázek můžeš také přetáhnout do náhledu.</small>
+        <div class="zoom-line"><label for="photo-zoom">Přiblížení <output id="zoom-value">100 %</output></label><button id="reset-image" type="button" class="text-action">Reset fotky</button></div>
+        <input id="photo-zoom" type="range" min="50" max="250" step="1" value="100" />
         <label for="photo-x">Pozice vodorovně</label><input id="photo-x" type="range" min="-100" max="100" step="1" value="0" />
         <label for="photo-y">Pozice svisle</label><input id="photo-y" type="range" min="-100" max="100" step="1" value="0" />
         <small class="hint">Fotografii můžeš také posouvat prstem přímo v náhledu.</small>
         <div class="color-line"><label for="background">Barva pozadí</label><input id="background" type="color" value="#000000" /></div>
       </section>
       <section class="panel">
-        <strong>Logo SceneLevel</strong><p class="small-muted">Nahraj průhledné PNG / SVG původního loga. Použije se automaticky na všech snímcích tohoto projektu.</p>
+        <strong>Logo SceneLevel</strong><p class="small-muted">Originální bílé SceneLevel logo je nastavené automaticky. Vlastní PNG / SVG můžeš nahrát jako volitelnou náhradu pro tento projekt.</p>
         <label for="logo-upload" class="ghost secondary file-label wide">Nahrát logo</label><input id="logo-upload" type="file" accept="image/png,image/webp,image/svg+xml" hidden />
       </section>
     </aside>

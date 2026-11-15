@@ -3,6 +3,7 @@
 // SceneLevel Studio – lightweight, local-only, dependency-free carousel editor.
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
+const DEFAULT_LOGO = './assets/logo_name_white.svg';
 const TYPES = {
   birthday: { label: 'Narozeniny', fields: [ ['primary','Jméno'], ['secondary','Věk / druhý řádek'], ['detail','Známé filmy a seriály'] ], defaults: {primary:'Robert Patrick',secondary:'turns 68 today',detail:'Terminator 2 · The X-Files · Peacemaker'}, defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'} },
   news: { label:'Filmová novinka', fields:[['primary','Hlavní titulek'],['secondary','Doplňující titulek'],['detail','Další informace']],defaults:{primary:'Jack Sparrow could return',secondary:'',detail:''},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'}},
@@ -44,7 +45,7 @@ function getImage(src){
   if(imgCache.size>32){for(const key of imgCache.keys()){if(key!==src){imgCache.delete(key);break;}}}
   return entry;
 }
-async function waitForImages(slide){await Promise.all([slide.photoData,state.logoData].filter(Boolean).map(s=>getImage(s).promise));}
+async function waitForImages(slide){await Promise.all([slide.photoData,state.logoData||DEFAULT_LOGO].filter(Boolean).map(s=>getImage(s).promise));}
 let rendering=false;
 function queuePreview(){if(rendering)return;rendering=true;requestAnimationFrame(()=>{rendering=false;drawPreview();});}
 function drawPreview(){const d=dims();if(canvas.width!==d.w||canvas.height!==d.h){canvas.width=d.w;canvas.height=d.h;}renderSlide(ctx,current(),d.w,d.h);}
@@ -53,18 +54,20 @@ function drawImageCover(c,image,x,y,w,h,slide){
   const baseScale=Math.max(w/image.width,h/image.height);
   const scale=baseScale*(slide.zoom||100)/100;
   const dw=image.width*scale,dh=image.height*scale;
-  const maxDx=Math.max(0,(dw-w)/2),maxDy=Math.max(0,(dh-h)/2);
-  const dx=x+(w-dw)/2+maxDx*(slide.x||0)/100;
-  const dy=y+(h-dh)/2+maxDy*(slide.y||0)/100;
+  // Below 100 % allow the entire image to show with the selected background around it.
+  // Panning works both when the photo is larger and when it is smaller than the frame.
+  const panX=Math.abs(dw-w)/2,panY=Math.abs(dh-h)/2;
+  const dx=x+(w-dw)/2+panX*(slide.x||0)/100;
+  const dy=y+(h-dh)/2+panY*(slide.y||0)/100;
   c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.drawImage(image,dx,dy,dw,dh);c.restore();
 }
 function shade(c,bg,from,to,w,h){const grad=c.createLinearGradient(0,Math.max(0,from),0,Math.max(from+1,to));grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(1,bg);c.fillStyle=grad;c.fillRect(0,Math.max(0,from),w,h-Math.max(0,from));}
 function rgb(c){const v=safeColor(c).slice(1);return [parseInt(v.slice(0,2),16),parseInt(v.slice(2,4),16),parseInt(v.slice(4,6),16)];}
 function drawLogo(c,cy,w,logo){
-  const entry=getImage(logo);
+  const entry=getImage(logo||DEFAULT_LOGO);
   if(entry?.loaded){const im=entry.image;const maxW=w*0.23,maxH=57,scale=Math.min(maxW/im.width,maxH/im.height);c.drawImage(im,(w-im.width*scale)/2,cy,im.width*scale,im.height*scale);return;}
-  // Placeholder only. For pixel-perfect matching, upload the real transparent SceneLevel logo.
-  c.save();c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.font='bold 35px Arial, sans-serif';c.fillText('◢ SceneLevel',w/2,cy+23);c.restore();
+  // Image is loading; draw nothing instead of a fake mark that could appear in exports.
+  // Exports explicitly wait for the bundled SVG. 
 }
 function fieldFont(type,field){
   if(field==='primary')return {font: type==='news'?98:type==='cta'?82:90,face:'Anton',line:1.16};
@@ -135,7 +138,25 @@ function renderSlide(c,slide,w,h){
   for(let i=0;i<layouts.length;i++){y+=gaps[i];drawRich(c,slide,layouts[i],y,w);y+=layouts[i].height;}
 }
 function renderCTA(c,slide,w,h,photoImg,bg){
-  if(photoImg){const photoTop=h===1920?850:510,photoHeight=h===1920?730:610;drawImageCover(c,photoImg,0,photoTop,w,photoHeight,slide);shade(c,bg,photoTop+photoHeight-120,photoTop+photoHeight+8,w,h);}
+  if(photoImg){
+    // The photo blends into the same dark background at BOTH edges, like the PSD.
+    // Transitions are tied to the photo region, not to the surrounding text.
+    const photoTop=Math.round(h*0.29);
+    const photoBottom=Math.round(h*0.95);
+    const photoHeight=photoBottom-photoTop;
+    drawImageCover(c,photoImg,0,photoTop,w,photoHeight,slide);
+    const [r,g,b]=rgb(bg);
+    const upper=Math.round(photoHeight*0.40);
+    const lower=Math.round(photoHeight*0.34);
+    const topFade=c.createLinearGradient(0,photoTop,0,photoTop+upper);
+    topFade.addColorStop(0,`rgba(${r},${g},${b},1)`);
+    topFade.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    c.fillStyle=topFade;c.fillRect(0,photoTop,w,upper+1);
+    const bottomFade=c.createLinearGradient(0,photoBottom-lower,0,photoBottom);
+    bottomFade.addColorStop(0,`rgba(${r},${g},${b},0)`);
+    bottomFade.addColorStop(1,`rgba(${r},${g},${b},1)`);
+    c.fillStyle=bottomFade;c.fillRect(0,photoBottom-lower,w,lower+1);
+  }
   drawLogo(c,h===1920?140:70,w,state.logoData);
   const maxW=w-100;
   const top=h===1920?350:250;
@@ -159,9 +180,17 @@ function renderFields(){
   $('photo-zoom').value=slide.zoom;$('zoom-value').value=`${slide.zoom} %`;$('zoom-value').textContent=`${slide.zoom} %`;
   $('photo-x').value=slide.x;$('photo-y').value=slide.y;$('background').value=safeColor(slide.bg);
 }
+function deleteSlideAt(i){
+  if(state.slides.length<=1){toast('V projektu musí zůstat alespoň jeden snímek.');return;}
+  state.slides.splice(i,1);
+  if(i<state.active)state.active--;
+  else if(i===state.active)state.active=Math.min(i,state.slides.length-1);
+  syncUI();scheduleSave();toast('Snímek odstraněn.');
+}
 function renderSlides(){
-  $('slide-strip').innerHTML=state.slides.map((slide,i)=>`<button type="button" class="slide-thumb ${i===state.active?'active':''}" data-i="${i}" aria-label="Otevřít snímek ${i+1}"><span class="slide-number">${String(i+1).padStart(2,'0')}</span><span class="slide-thumbnail">${esc((slide.values.primary||'SLIDE').slice(0,32))}</span><span class="slide-caption">${esc(TYPES[slide.type]?.label||slide.type)}</span></button>`).join('');
+  $('slide-strip').innerHTML=state.slides.map((slide,i)=>`<div class="slide-item"><button type="button" class="slide-thumb ${i===state.active?'active':''}" data-i="${i}" aria-label="Otevřít snímek ${i+1}"><span class="slide-number">${String(i+1).padStart(2,'0')}</span><span class="slide-thumbnail">${esc((slide.values.primary||'SLIDE').slice(0,32))}</span><span class="slide-caption">${esc(TYPES[slide.type]?.label||slide.type)}</span></button><button type="button" class="slide-remove" data-remove="${i}" aria-label="Smazat snímek ${i+1}" title="Smazat snímek" ${state.slides.length<=1?'disabled':''}>×</button></div>`).join('');
   $('slide-strip').querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{state.active=Number(el.dataset.i);syncUI();scheduleSave();});
+  $('slide-strip').querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>deleteSlideAt(Number(el.dataset.remove)));
   $('move-left').disabled=state.active===0;$('move-right').disabled=state.active>=state.slides.length-1;$('delete-slide').disabled=state.slides.length<=1;
 }
 function syncUI(){ $('project-title').value=state.title;$('format').value=state.format;rememberedSelection=null;renderFields();renderSlides();queuePreview(); }
@@ -169,19 +198,51 @@ function scheduleSave(){if(!ready)return;$('save-state').textContent='Ukládán�
 function db(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window))return reject(Error('IndexedDB unavailable'));const r=indexedDB.open('scenelevel-studio-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function loadProject(){const database=await db();try{return await new Promise((resolve,reject)=>{const transaction=database.transaction('kv','readonly');const req=transaction.objectStore('kv').get('project');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}finally{database.close();}}
 async function saveProject(){if(!ready)return;let database;try{database=await db();await new Promise((resolve,reject)=>{const tx=database.transaction('kv','readwrite');tx.objectStore('kv').put(state,'project');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});$('save-state').textContent='Uloženo v zařízení ✓';}catch(e){$('save-state').textContent='Uložení selhalo';toast('Koncept se nepodařilo uložit. Stáhni si raději zálohu projektu.');console.error(e);}finally{database?.close();}}
+async function setPhoto(file){
+  if(!file?.type?.startsWith('image/')){toast('Ve schránce není podporovaný obrázek.');return;}
+  const destination=current();
+  try{
+    const data=await encodeImage(file);
+    destination.photoData=data;
+    destination.zoom=100;destination.x=0;destination.y=0;
+    renderFields();queuePreview();scheduleSave();
+    toast('Fotografie vložena. Nyní ji můžeš přiblížit, oddálit nebo posunout.');
+  }catch(err){console.error(err);toast('Fotografii nelze vložit. Zkus ji stáhnout jako JPG nebo PNG.');}
+}
+async function pasteViaButton(){
+  if(!navigator.clipboard?.read){toast('Prohlížeč nepodporuje přímé čtení obrázků. Na počítači použij Ctrl+V / Cmd+V, na telefonu vyber fotografii.');return;}
+  try{
+    const items=await navigator.clipboard.read();
+    for(const item of items){
+      const type=item.types.find(t=>t.startsWith('image/'));
+      if(type){const blob=await item.getType(type);await setPhoto(new File([blob],'vlozeny-obrazek',{type}));return;}
+    }
+    toast('Ve schránce není přímo obrázek. Zkopíruj obrázek (ne jeho odkaz) nebo ho vyber ze zařízení.');
+  }catch(e){console.warn('Clipboard read unavailable',e);toast('Prohlížeč nepovolil přístup ke schránce. Na počítači zkus Ctrl+V / Cmd+V.');}
+}
 function bind(){
   $('project-title').addEventListener('input',e=>{state.title=e.target.value;scheduleSave();});
   $('format').addEventListener('change',e=>{state.format=e.target.value;queuePreview();scheduleSave();});
   $('slide-type').addEventListener('change',e=>{const old=current(),t=e.target.value;state.slides[state.active]={...makeSlide(t),id:old.id,photoData:old.photoData,zoom:old.zoom,x:old.x,y:old.y,bg:old.bg};syncUI();scheduleSave();});
   for(const [id,key] of [['photo-zoom','zoom'],['photo-x','x'],['photo-y','y'],['background','bg']])$(id).addEventListener('input',e=>{current()[key]=key==='bg'?e.target.value:Number(e.target.value);if(key==='zoom')$('zoom-value').textContent=e.target.value+' %';queuePreview();scheduleSave();});
-  $('photo-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{current().photoData=await encodeImage(file);queuePreview();scheduleSave();toast('Fotografie vložena. Posuň ji nebo uprav přiblížení.');}catch(err){toast('Fotografii se nepodařilo načíst. Zkus JPG nebo PNG.');console.error(err);}e.target.value='';});
+  $('photo-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await setPhoto(file);e.target.value='';});
   $('logo-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{state.logoData=await readDataURL(file);queuePreview();scheduleSave();toast('Logo bylo přiřazeno všem snímkům.');}catch{toast('Logo se nepodařilo načíst.');}e.target.value='';});
   $('remove-image').addEventListener('click',()=>{current().photoData='';queuePreview();scheduleSave();});
+  $('reset-image').addEventListener('click',()=>{const slide=current();slide.zoom=100;slide.x=0;slide.y=0;renderFields();queuePreview();scheduleSave();});
+  $('paste-image').addEventListener('click',pasteViaButton);
+  document.addEventListener('paste',async e=>{
+    const file=Array.from(e.clipboardData?.items||[]).find(item=>item.type.startsWith('image/'))?.getAsFile();
+    if(!file)return; // Regular text paste must continue to work normally.
+    e.preventDefault();await setPhoto(file);
+  });
+  // Drag a saved image from a file manager directly onto the preview.
+  canvas.addEventListener('dragover',e=>{if(Array.from(e.dataTransfer?.items||[]).some(item=>item.kind==='file'))e.preventDefault();});
+  canvas.addEventListener('drop',async e=>{const file=Array.from(e.dataTransfer?.files||[]).find(file=>file.type.startsWith('image/'));if(!file)return;e.preventDefault();await setPhoto(file);});
   $('highlight-apply').addEventListener('click',()=>markSelection($('highlight-color').value));
   $('highlight-clear').addEventListener('click',()=>markSelection(null));
   $('add-slide').addEventListener('click',()=>{const slide=makeSlide($('new-slide-type').value);const endIndex=state.slides.length-1;const insertBeforeLast=state.slides[endIndex]?.type==='cta'&&endIndex>=state.active;const index=insertBeforeLast?endIndex:state.active+1;state.slides.splice(index,0,slide);state.active=index;syncUI();scheduleSave();});
   $('duplicate-slide').addEventListener('click',()=>{const copy=structuredClone(current());copy.id=makeId();state.slides.splice(state.active+1,0,copy);state.active++;syncUI();scheduleSave();});
-  $('delete-slide').addEventListener('click',()=>{if(state.slides.length<=1)return;state.slides.splice(state.active,1);state.active=Math.min(state.active,state.slides.length-1);syncUI();scheduleSave();});
+  $('delete-slide').addEventListener('click',()=>deleteSlideAt(state.active));
   for(const [id,dx]of [['move-left',-1],['move-right',1]])$(id).addEventListener('click',()=>{const to=state.active+dx;if(to<0||to>=state.slides.length)return;[state.slides[state.active],state.slides[to]]=[state.slides[to],state.slides[state.active]];state.active=to;syncUI();scheduleSave();});
   $('export-one').addEventListener('click',()=>exportOne());
   $('export-all').addEventListener('click',()=>exportAll());
