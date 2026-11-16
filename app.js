@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '0.6.0';
+window.__SCENELEVEL_STUDIO_VERSION = '0.7.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -309,7 +309,7 @@ function renderFields(){
   $('photo-x').value=slide.x;$('photo-y').value=slide.y;$('background').value=safeColor(slide.bg);
 }
 function deleteSlideAt(i){
-  if(window.matchMedia('(max-width:740px)').matches && !window.confirm(`Smazat snímek ${i+1} z ${state.slides.length}?`))return;
+  if(!window.confirm(`Opravdu chceš smazat snímek ${i+1} z ${state.slides.length}? Tuto akci nelze vrátit.`))return;
   if(state.slides.length<=1){toast('V projektu musí zůstat alespoň jeden snímek.');return;}
   state.slides.splice(i,1);
   if(i<state.active)state.active--;
@@ -317,11 +317,18 @@ function deleteSlideAt(i){
   syncUI();scheduleSave();toast('Snímek odstraněn.');
 }
 function renderSlides(){
-  $('slide-strip').innerHTML=state.slides.map((slide,i)=>`<div class="slide-item"><button type="button" class="slide-thumb ${i===state.active?'active':''}" data-i="${i}" aria-label="Otevřít snímek ${i+1}"><span class="slide-number">${String(i+1).padStart(2,'0')}</span><span class="slide-thumbnail">${esc((slide.values.primary||'SLIDE').slice(0,32))}</span><span class="slide-caption">${esc(TYPES[slide.type]?.label||slide.type)}</span></button><button type="button" class="slide-remove" data-remove="${i}" aria-label="Smazat snímek ${i+1}" title="Smazat snímek" ${state.slides.length<=1?'disabled':''}>×</button></div>`).join('');
-  $('slide-strip').querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{state.active=Number(el.dataset.i);syncUI();scheduleSave();});
-  $('slide-strip').querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>deleteSlideAt(Number(el.dataset.remove)));
-  $('move-left').disabled=state.active===0;$('move-right').disabled=state.active>=state.slides.length-1;$('delete-slide').disabled=state.slides.length<=1;
+  // Each card has precisely one action: select the slide. Never overlay a delete button.
+  $('slide-strip').innerHTML=state.slides.map((slide,i)=>`<button type="button" class="slide-thumb ${i===state.active?'active':''}" data-i="${i}" aria-label="Vybrat snímek ${i+1} z ${state.slides.length}: ${esc(TYPES[slide.type]?.label||slide.type)}" aria-pressed="${i===state.active}"><span class="slide-number">${String(i+1).padStart(2,'0')} / ${String(state.slides.length).padStart(2,'0')}</span><span class="slide-thumbnail">${esc((slide.values.primary||'SLIDE').slice(0,32))}</span><span class="slide-caption">${esc(TYPES[slide.type]?.label||slide.type)}</span></button>`).join('');
+  $('slide-strip').querySelectorAll('[data-i]').forEach(el=>el.addEventListener('click',()=>{
+    const index=Number(el.dataset.i);
+    if(!Number.isInteger(index)||index<0||index>=state.slides.length)return;
+    state.active=index;syncUI();scheduleSave();
+  }));
+  $('move-left').disabled=state.active===0;
+  $('move-right').disabled=state.active>=state.slides.length-1;
+  $('delete-slide').disabled=state.slides.length<=1;
 }
+
 function syncUI(){
   $('project-title').value=state.title;$('format').value=state.format;
   rememberedSelection=null;renderFields();renderSlides();queuePreview();
@@ -376,11 +383,11 @@ async function openProjectById(id){
     const upgraded=ensureNewsStructure(p);
     if(upgraded){p.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(p));}
     state=p;state.active=Math.max(0,Math.min(state.active||0,state.slides.length-1));
-    setScreen(true);syncUI();setMobileTab('text');
+    setScreen(true);syncUI();setMobileTab('slides');
     if(upgraded)toast('Starší novinka doplněna o informační snímek. Původní snímky zůstaly zachované.');
   }catch(e){console.error(e);toast('Projekt se nepodařilo otevřít.');}
 }
-async function createProject(template){try{const p=makeProject(template);ensureNewsStructure(p);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();setMobileTab('text');toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
+async function createProject(template){try{const p=makeProject(template);ensureNewsStructure(p);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();setMobileTab('slides');toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
 async function goHome(){try{await flushProject();}catch(e){console.error(e);toast('Poslední změny nemusely být uloženy. Stáhni si zálohu projektu.');return;}setScreen(false);await refreshDashboard();}
 async function removeProject(id){const p=projectList.find(item=>item.id===id);if(!p)return;if(!confirm(`Opravdu smazat projekt „${p.title}“? Smazání nelze vrátit.`))return;try{await transact('projects','readwrite',store=>store.delete(id));await refreshDashboard();toast('Projekt byl smazán.');}catch(e){console.error(e);toast('Projekt se nepodařilo smazat.');}}
 async function duplicateProject(id){const old=projectList.find(item=>item.id===id);if(!old)return;try{const copy=structuredClone(old);copy.id=makeId();copy.title=old.title+' (kopie)';copy.createdAt=copy.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(copy));await refreshDashboard();toast('Kopie projektu připravena.');}catch(e){console.error(e);toast('Projekt nelze duplikovat.');}}
@@ -569,4 +576,4 @@ function writeZip(files){
   return new Blob([...local,...central,end],{type:'application/zip'});
 }
 async function exportAll(){const b=$('export-all');b.disabled=true;try{await flushProject();const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
-(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.6.0',{updateViaCache:'none'}).catch(()=>{});} })();
+(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.7.0',{updateViaCache:'none'}).catch(()=>{});} })();

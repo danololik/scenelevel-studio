@@ -1,3 +1,9 @@
+# SceneLevel Studio v0.7
+
+Bezpečný výběr snímků: klepnutí pouze vybírá; mazání je samostatné tlačítko s potvrzením. Mobilní galerie je 3sloupcová bez překryvných tlačítek. Záložky jsou nahoře, náhled zůstává viditelný. Staré projekty zůstávají uložené v IndexedDB.
+
+**Aktualizace:** rozbal ZIP a nahraj všechny soubory do kořene GitHub repozitáře. Před nasazením doporučujeme exportovat zálohu projektu. Pokud iPhone stále ukazuje staré UI, otevři web přímo v Safari v nové kartě; nesmaž data webu, protože obsahují koncepty.
+
 ## SceneLevel Studio v0.6
 
 Mobilní editor má čtyři samostatné záložky: Snímky, Text, Fotka a Více. Náhled zůstává nahoře; na mobilu nejsou přes jednotlivé náhledy mazací křížky. Mazání vybraného snímku vyžaduje potvrzení. Všechny funkce a úložiště v0.5 zachovány.

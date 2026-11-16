@@ -189,3 +189,37 @@
   #editor .workspace{padding:7px 9px 7px;gap:6px}
   .mobile-tabs{padding:5px 8px}
 }
+
+/* v0.7 — Mobile-native slide selection. Selection is always safe; deletion is a separate confirmed action. */
+@media (max-width:740px) {
+  #editor .mobile-tabs {order:0; flex:0 0 auto; position:relative; z-index:2;}
+  #editor .workspace {order:1; min-height:0; flex:0 0 auto; padding:8px 12px 6px; gap:7px; overflow:visible;}
+  #editor .sidebar {order:2; min-height:0; flex:1 1 auto; overflow-y:auto;}
+  #editor .workspace-top {flex:0 0 auto;}
+  #editor #post-canvas {height:min(30dvh,270px); width:auto; max-width:100%;}
+  #editor .quick-photo {padding:0 2px; min-height:34px; flex:0 0 auto;}
+  #editor .slide-header, #editor .slide-strip, #editor .add-slide-row {display:none!important;}
+  #editor[data-mobile-tab='slides'] .workspace {flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+  #editor[data-mobile-tab='slides'] .workspace .slide-header {display:flex!important; max-width:520px; flex-wrap:wrap; margin:5px auto 0;}
+  #editor .slide-header .slide-title {min-width:0;flex:1 1 100%;}
+  #editor .slide-header .slide-structure-hint {font-size:10px;line-height:1.35;}
+  #editor .slide-operations {width:100%;display:grid;grid-template-columns:45px 45px 1fr 1fr;gap:7px;}
+  #editor .slide-operations button {min-height:40px;font-size:12px;white-space:nowrap;}
+  #editor[data-mobile-tab='slides'] .workspace .slide-strip {
+    display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+    overflow:visible;max-width:520px;width:100%;padding:3px 0 6px;scroll-snap-type:none;
+  }
+  #editor .slide-strip .slide-thumb {
+    width:100%;min-width:0;min-height:136px;height:auto;display:flex;align-items:center;justify-content:flex-start;
+    border-radius:12px;padding:9px 4px 8px;gap:5px;position:relative;touch-action:manipulation;
+  }
+  #editor .slide-strip .slide-thumb.active {box-shadow:inset 0 0 0 1px #f97316;}
+  #editor .slide-strip .slide-thumbnail {height:76px;width:59px;max-width:100%;font-size:10px;}
+  #editor .slide-strip .slide-caption {font-size:11px;max-width:100%;white-space:normal;line-height:1.15;overflow-wrap:anywhere;}
+  #editor .slide-strip .slide-number {font-size:10px;}
+  #editor[data-mobile-tab='slides'] .workspace .add-slide-row {display:grid!important;grid-template-columns:1fr 1fr;gap:9px;max-width:520px;margin:2px auto 0;}
+  #editor .add-slide-row select {grid-column:1/-1;max-width:100%;width:100%;min-height:43px;font-size:14px;}
+  #editor .add-slide-row button {min-height:43px;padding:9px 6px;font-size:12px;white-space:normal;}
+  #editor .slide-remove {display:none!important;}
+}
+@media(max-width:370px){#editor #post-canvas{height:min(27dvh,235px)}#editor .slide-strip .slide-thumb{min-height:124px}}
