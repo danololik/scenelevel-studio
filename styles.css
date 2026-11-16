@@ -223,3 +223,51 @@
   #editor .slide-remove {display:none!important;}
 }
 @media(max-width:370px){#editor #post-canvas{height:min(27dvh,235px)}#editor .slide-strip .slide-thumb{min-height:124px}}
+
+/* v0.8 — always-visible mobile navigation, independent scroll panes. */
+@media (max-width:740px) {
+  #editor {
+    position:relative;
+    flex:1 1 auto;
+    height:auto;
+    min-height:0;
+    overflow:hidden;
+    padding-bottom:calc(66px + env(safe-area-inset-bottom, 0px));
+  }
+  #editor .mobile-tabs {
+    display:grid!important;
+    position:fixed!important;
+    top:auto!important;
+    bottom:0!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:none!important;
+    height:calc(64px + env(safe-area-inset-bottom, 0px));
+    padding:5px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-sizing:border-box;
+    z-index:1000!important;
+    background:#121218;
+    border-top:1px solid #373540;
+    border-bottom:0;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    box-shadow:0 -8px 22px #0008;
+  }
+  #editor .mobile-tabs button {
+    min-width:0;
+    min-height:49px;
+    touch-action:manipulation;
+  }
+  #editor .workspace {order:0;min-height:0;}
+  #editor .sidebar {order:1;min-height:0;}
+  #editor[data-mobile-tab='slides'] .workspace {
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    padding-bottom:20px;
+  }
+  #editor:not([data-mobile-tab='slides']) .workspace {flex:0 0 auto;overflow:visible;}
+  #editor:not([data-mobile-tab='slides']) .sidebar {flex:1 1 auto;overflow-y:auto;}
+  #editor .slide-strip {scroll-margin:0;}
+  #toast {bottom:calc(76px + env(safe-area-inset-bottom, 0px));z-index:1002;}
+}

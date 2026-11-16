@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '0.7.0';
+window.__SCENELEVEL_STUDIO_VERSION = '0.8.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -453,7 +453,8 @@ function setMobileTab(tab){
   });
   const sidebar=document.querySelector('#editor .sidebar');sidebar.scrollTop=0;
   const workspace=document.querySelector('#editor .workspace');workspace.scrollTop=0;
-  if(tab==='slides')requestAnimationFrame(()=>{$('slide-strip').querySelector('.slide-item .active')?.scrollIntoView({block:'nearest',inline:'nearest'});});
+  // Do not scrollIntoView here: on iOS it can scroll the entire editor and hide the navigation.
+  // The slide grid is available in its own scrollable content area.
 }
 function bind(){
   $('go-home').addEventListener('click',goHome);
@@ -576,4 +577,4 @@ function writeZip(files){
   return new Blob([...local,...central,end],{type:'application/zip'});
 }
 async function exportAll(){const b=$('export-all');b.disabled=true;try{await flushProject();const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
-(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.7.0',{updateViaCache:'none'}).catch(()=>{});} })();
+(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.8.0',{updateViaCache:'none'}).catch(()=>{});} })();
