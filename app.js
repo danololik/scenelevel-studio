@@ -1,6 +1,7 @@
 'use strict';
 
-// SceneLevel Studio – lightweight, local-only, dependency-free carousel editor.
+// SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
+window.__SCENELEVEL_STUDIO_VERSION = '0.5.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -25,6 +26,17 @@ function makeProject(template='birthday'){
   if(template==='blank')slides[0].values={primary:'',secondary:'',detail:''};
   const names={birthday:'Narozeninový carousel',news:'Filmová novinka',memorial:'In Memoriam',blank:'Nový projekt'};
   return {id:makeId(),version:1,title:names[template]||names.blank,format:'4:5',logoData:'',slides,active:0,createdAt:Date.now(),updatedAt:Date.now()};
+}
+// Existing v0.3 projects may have only a cover and a CTA. Bring them to the
+// PSD's three-part structure without deleting or overwriting any user content.
+function ensureNewsStructure(project) {
+  if (!project?.slides?.length || project.slides[0]?.type !== 'news') return false;
+  if (project.slides.some(slide => slide.type === 'newsinfo')) return false;
+  const lastCta = project.slides.findLastIndex(slide => slide.type === 'cta');
+  project.slides.splice(lastCta < 0 ? project.slides.length : lastCta, 0, makeSlide('newsinfo'));
+  if (typeof project.active !== 'number' || project.active < 0) project.active = 0;
+  else if (lastCta >= 0 && project.active >= lastCta) project.active += 1;
+  return true;
 }
 let state=makeProject();
 let projectList=[];
@@ -314,6 +326,8 @@ function syncUI(){
   rememberedSelection=null;renderFields();renderSlides();queuePreview();
   $('new-slide-type').value=state.slides[0]?.type==='news'?'newsinfo':state.slides[0]?.type==='memorial'?'role':'birthday';
   $('add-news-info').hidden=state.slides[0]?.type!=='news';
+  $('add-news-info').textContent='＋ Přidat informační snímek';
+  $('slide-structure-hint').hidden=state.slides[0]?.type!=='news';
 }
 function scheduleSave(){if(!ready||!openedProject)return;$('save-state').textContent='Ukládání…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveProject().catch(console.error);},450);}
 function db(){return new Promise((resolve,reject)=>{
@@ -354,8 +368,18 @@ function setScreen(showEditor){
   if(showEditor)requestAnimationFrame(()=>{queuePreview();window.scrollTo(0,0);});
   else window.scrollTo(0,0);
 }
-async function openProjectById(id){try{const p=await transact('projects','readonly',store=>store.get(id));if(!validateProject(p))throw Error('Invalid project');state=p;state.active=Math.max(0,Math.min(state.active||0,state.slides.length-1));setScreen(true);syncUI();}catch(e){console.error(e);toast('Projekt se nepodařilo otevřít.');}}
-async function createProject(template){try{const p=makeProject(template);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
+async function openProjectById(id){
+  try{
+    const p=await transact('projects','readonly',store=>store.get(id));
+    if(!validateProject(p))throw Error('Invalid project');
+    const upgraded=ensureNewsStructure(p);
+    if(upgraded){p.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(p));}
+    state=p;state.active=Math.max(0,Math.min(state.active||0,state.slides.length-1));
+    setScreen(true);syncUI();
+    if(upgraded)toast('Starší novinka doplněna o informační snímek. Původní snímky zůstaly zachované.');
+  }catch(e){console.error(e);toast('Projekt se nepodařilo otevřít.');}
+}
+async function createProject(template){try{const p=makeProject(template);ensureNewsStructure(p);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
 async function goHome(){try{await flushProject();}catch(e){console.error(e);toast('Poslední změny nemusely být uloženy. Stáhni si zálohu projektu.');return;}setScreen(false);await refreshDashboard();}
 async function removeProject(id){const p=projectList.find(item=>item.id===id);if(!p)return;if(!confirm(`Opravdu smazat projekt „${p.title}“? Smazání nelze vrátit.`))return;try{await transact('projects','readwrite',store=>store.delete(id));await refreshDashboard();toast('Projekt byl smazán.');}catch(e){console.error(e);toast('Projekt se nepodařilo smazat.');}}
 async function duplicateProject(id){const old=projectList.find(item=>item.id===id);if(!old)return;try{const copy=structuredClone(old);copy.id=makeId();copy.title=old.title+' (kopie)';copy.createdAt=copy.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(copy));await refreshDashboard();toast('Kopie projektu připravena.');}catch(e){console.error(e);toast('Projekt nelze duplikovat.');}}
@@ -397,11 +421,18 @@ function resetPhotoPosition(){
   queuePreview();scheduleSave();
 }
 function addSlideOfType(type){
-  const slide=makeSlide(type),endIndex=state.slides.length-1;
-  // Dedicated continuation action always inserts before the final CTA, avoiding out-of-order stories.
-  const index=type==='newsinfo'&&state.slides[endIndex]?.type==='cta' ? endIndex :
-    (state.slides[endIndex]?.type==='cta'&&endIndex>=state.active?endIndex:state.active+1);
-  state.slides.splice(index,0,slide);state.active=index;syncUI();scheduleSave();
+  if(!TYPES[type]){toast('Tato šablona není dostupná. Obnov stránku a zkontroluj verzi Studia.');return;}
+  const slide=makeSlide(type);
+  const lastCta=state.slides.findLastIndex(s=>s.type==='cta');
+  // News continuation always goes just before the final CTA, never behind it.
+  let index;
+  if(type==='newsinfo' && state.slides[0]?.type==='news')index=lastCta>=0?lastCta:state.slides.length;
+  else if(lastCta>=state.active && lastCta>=0 && type!=='cta')index=lastCta;
+  else index=state.active+1;
+  state.slides.splice(index,0,slide);
+  state.active=index;
+  syncUI();scheduleSave();
+  toast(type==='newsinfo'?'Přidán informační snímek před závěrečný CTA.':'Nový snímek byl přidán.');
 }
 function bind(){
   $('go-home').addEventListener('click',goHome);
@@ -440,7 +471,7 @@ function bind(){
   $('export-one').addEventListener('click',()=>exportOne());
   $('export-all').addEventListener('click',()=>exportAll());
   $('project-download').addEventListener('click',()=>{downloadBlob(new Blob([JSON.stringify(state)],{type:'application/json'}),`${slug(state.title)||'scenelevel'}-projekt.json`);});
-  $('project-import').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const item=JSON.parse(await file.text());if(!validateProject(item))throw Error('Invalid project');const imported=structuredClone(item);imported.id=makeId();imported.createdAt=imported.updatedAt=Date.now();await flushProject();await transact('projects','readwrite',store=>store.put(imported));state=imported;setScreen(true);syncUI();toast('Projekt importován jako nový, ostatní projekty zůstaly zachované.');}catch{toast('Neplatný soubor projektu.');}e.target.value='';});
+  $('project-import').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const item=JSON.parse(await file.text());if(!validateProject(item))throw Error('Invalid project');const imported=structuredClone(item);ensureNewsStructure(imported);imported.id=makeId();imported.createdAt=imported.updatedAt=Date.now();await flushProject();await transact('projects','readwrite',store=>store.put(imported));state=imported;setScreen(true);syncUI();toast('Projekt importován jako nový, ostatní projekty zůstaly zachované.');}catch{toast('Neplatný soubor projektu.');}e.target.value='';});
   // Direct manipulation: single-finger / mouse drag moves, two-finger pinch zooms.
   const pointers=new Map();let gesture=null;
   function beginGesture(){
@@ -520,4 +551,4 @@ function writeZip(files){
   return new Blob([...local,...central,end],{type:'application/zip'});
 }
 async function exportAll(){const b=$('export-all');b.disabled=true;try{await flushProject();const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
-(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js').catch(()=>{});} })();
+(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.5.0',{updateViaCache:'none'}).catch(()=>{});} })();

@@ -1,31 +1,24 @@
-# SceneLevel Studio v0.4
+# SceneLevel Studio v0.5 — oprava filmových novinek
 
-Statický editor na GitHub Pages, bez buildování a bez serveru.
+Toto je kompletní sada souborů pro GitHub Pages. Nahraj **obsah** rozbalené složky do kořene repozitáře `scenelevel-studio` (včetně `assets/`) a přepiš staré soubory.
 
-## Novinky
-- Domovská obrazovka s výběrem šablon a uložených projektů.
-- Více nezávislých projektů v IndexedDB, včetně vytvoření, otevření, duplikace a mazání.
-- Automatická migrace jednoho rozpracovaného projektu z v0.2. Původní záznam ponecháváme beze změny.
-- Závěrečný CTA předělaný podle původního příspěvku: **barevné logo**, oranžovo-bílý slogan, střídavé barvy URL, horní i spodní přechod fotografie, samostatný dvouřádkový footer.
-- Každou šablonu lze použít jako začátek nového projektu; další snímky lze libovolně přidávat.
+## Filmové novinky podle dodaného PSD
+- `Slide 1`: fotografie, bílé SceneLevel logo, velký titulek (`news`).
+- `Slide 2`: fotografie, bílé SceneLevel logo, delší informační text (`newsinfo`).
+- `Slide 3`: barevné logo, slogan, fotografie s dvěma přechody, spodní text (`cta`).
+- Nový projekt **Filmová novinka automaticky obsahuje všechny tři snímky**.
+- Tlačítko **+ Přidat informační snímek** vytvoří další informační snímek **před posledním CTA**.
+- Otevření starší filmové novinky z v0.3/v0.4, ve které chybí informační snímek, jej samo doplní, aniž by cokoli mazalo. Pokud má projekt další nesouvisející či duplicitní snímky, zůstanou zachované pro ruční úpravu.
+- Aktualizované URL CSS/JS a cache service workeru v5 zabraňují kombinaci nové stránky se starým JavaScriptem. Aplikace hlásí zjevný nesoulad verzí.
 
-## Aktualizace
-1. Zálohuj rozpracovaný projekt přes **Záloha projektu**.
-2. Nahraj soubory z rozbaleného ZIP do kořene veřejného GitHub repozitáře a přepiš staré. Včetně `assets/logo_name_colour.svg`.
-3. Po GitHub Pages deployi otevři novou verzi.
-4. Na úvodní obrazovce vyber typ projektu nebo pokračuj ve starém. Ten je v lokálním úložišti prohlížeče automaticky migrován do nového seznamu.
+## Co se nemění
+- Rozlišení PNG, export ZIP, gesta fotografie, práce se schránkou, fonty Anton/Oswald, bílé a barevné logo.
+- Projekty jsou nadále v IndexedDB **pouze na daném zařízení**. **Před aktualizací vždy stáhni zálohu projektu**; při výmazu dat prohlížeče by se lokální projekty ztratily.
+- Aplikace nikdy automaticky neodstraňuje starší snímky.
 
-## Poznámky k ukládání
-Projekty zůstávají **lokálně v konkrétním prohlížeči a zařízení**. Smazání dat webu či soukromý režim je může odstranit. Před důležitými úpravami či přesunem mezi zařízeními si stáhni JSON zálohu. Velké množství fotografií může vyčerpat úložiště. Projekty nejsou dostupné automaticky na jiných zařízeních.
-
-Toto je vlastní editor pro příspěvky, nikoli plná PSD kompatibilita. CTA je přepracován dle screenshotu; případné pixelové rozdíly proti Photoshopu lze dále dolaďovat.
-
-
-## Verze v0.4
-- Filmová novinka nyní začíná 3 snímky: titulní novinka, informační snímek a CTA.
-- Tlačítko **Další informace** přidává další informační snímek před závěrečné CTA.
-- Informační snímky mají vlastní fotografii a delší text na dolním černém přechodu podle PSD.
-- Zoom 1–500 % (100 % = automatické pokrytí obrazové oblasti; není to měřítko původních pixelů).
-- Na obrázku funguje tažení a pinch dvěma prsty; u náhledu je rychlý zoom a reset.
-- Na malých displejích je nahoře kompaktní náhled s ovládáním a spodní část stránky tvoří samostatně scrollovatelný editor.
-- Uložené projekty z v0.3 se nemění ani nemažou.
+## Publikace
+1. Zálohuj projekt v0.4.
+2. Na GitHub otevři `Add file → Upload files`, vyber **obsah** rozbaleného balíčku a potvrď přepsání všech předchozích souborů.
+3. Potvrď `Commit changes`.
+4. Po úspěšném GitHub Pages deployi stránku otevři znovu; při zobrazení starých souborů proveď `Ctrl+Shift+R` (v Safari zavři a znovu otevři web app).
+5. Na úvodní obrazovce založ **novou filmovou novinku** – musí obsahovat **3** snímky. Na druhém klikni na **+ Přidat informační snímek** – musí vzniknout čtvrtý, před závěrečným CTA.

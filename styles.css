@@ -112,3 +112,6 @@
   #editor .workspace-top h1{font-size:13px}
   #editor .export-actions button{font-size:9px}
 }
+
+/* v0.5 – clearly show story structure without taking more vertical space */
+.slide-title{display:flex;flex-direction:column;gap:4px}.slide-structure-hint{font-size:11px;font-weight:400;color:#b9b2bd}.slide-structure-hint[hidden]{display:none}
