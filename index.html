@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=0.8.0" />
+  <link rel="stylesheet" href="./styles.css?v=0.9.0" />
   <title>SceneLevel Studio</title>
-  <script src="./app.js?v=0.8.0" defer></script>
+  <script src="./app.js?v=0.9.0" defer></script>
 </head>
 <body>
   <header class="header">
@@ -32,14 +32,8 @@
     <div id="project-list" class="project-list"></div>
   </section>
   <main id="editor" data-mobile-tab="slides" hidden>
-    <nav class="mobile-tabs" aria-label="Nástroje editoru">
-      <button type="button" data-mobile-tab="slides"><span aria-hidden="true">▦</span><span>Snímky</span></button>
-      <button type="button" data-mobile-tab="text"><span aria-hidden="true">T</span><span>Text</span></button>
-      <button type="button" data-mobile-tab="photo"><span aria-hidden="true">▧</span><span>Fotka</span></button>
-      <button type="button" data-mobile-tab="more"><span aria-hidden="true">⚙</span><span>Více</span></button>
-    </nav>
     <aside class="sidebar">
-      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.8</span></div>
+      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.9</span></div>
       <section class="panel mobile-settings-panel">
         <label for="project-title">Název projektu</label>
         <input id="project-title" type="text" placeholder="Např. Narozeniny – 15. listopadu" maxlength="120" />
@@ -93,8 +87,14 @@
       <div class="add-slide-row"><select id="new-slide-type" aria-label="Šablona pro nový snímek"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="newsinfo">Novinka – další informace</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – role</option><option value="closing">In Memoriam – závěr</option><option value="cta">Závěrečný CTA</option></select><button class="ghost" id="add-slide">＋ Přidat snímek</button><button class="primary" id="add-news-info" type="button" hidden>＋ Přidat informační snímek</button></div>
     </section>
   </main>
-  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.8</span></footer>
+  <nav id="studio-mobile-navigation" class="mobile-tabs" hidden aria-label="Nástroje editoru">
+      <button type="button" data-mobile-tab="slides"><span aria-hidden="true">▦</span><span>Snímky</span></button>
+      <button type="button" data-mobile-tab="text"><span aria-hidden="true">T</span><span>Text</span></button>
+      <button type="button" data-mobile-tab="photo"><span aria-hidden="true">▧</span><span>Fotka</span></button>
+      <button type="button" data-mobile-tab="more"><span aria-hidden="true">⚙</span><span>Více</span></button>
+    </nav>
+  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.9</span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script>window.addEventListener('load',()=>{setTimeout(()=>{if(window.__SCENELEVEL_STUDIO_VERSION!=='0.8.0'){const a=document.createElement('div');a.textContent='Načetl se starší kód Studia. Obnov stránku pomocí Ctrl+Shift+R (na mobilu zavři a znovu otevři aplikaci).';a.style.cssText='position:fixed;z-index:99999;top:10px;left:10px;right:10px;border:2px solid #f97316;border-radius:10px;background:#24160f;color:#fff;padding:15px;font-size:14px';document.body.appendChild(a)}},750)}, {once:true});</script>
+  <script>window.addEventListener('load',()=>{setTimeout(()=>{if(window.__SCENELEVEL_STUDIO_VERSION!=='0.9.0'){const a=document.createElement('div');a.textContent='Načetl se starší kód Studia. Obnov stránku pomocí Ctrl+Shift+R (na mobilu zavři a znovu otevři aplikaci).';a.style.cssText='position:fixed;z-index:99999;top:10px;left:10px;right:10px;border:2px solid #f97316;border-radius:10px;background:#24160f;color:#fff;padding:15px;font-size:14px';document.body.appendChild(a)}},750)}, {once:true});</script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '0.8.0';
+window.__SCENELEVEL_STUDIO_VERSION = '0.9.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -371,6 +371,7 @@ async function refreshDashboard(){
 function setScreen(showEditor){
   openedProject=showEditor;
   $('editor').hidden=!showEditor;$('dashboard').hidden=showEditor;
+  $('studio-mobile-navigation').hidden=!showEditor;
   $('go-home').hidden=!showEditor;$('project-download').hidden=!showEditor;
   $('save-state').textContent=showEditor?'Uloženo v zařízení ✓':'Projekty na tomto zařízení';
   if(showEditor)requestAnimationFrame(()=>{queuePreview();window.scrollTo(0,0);});

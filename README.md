@@ -1,12 +1,5 @@
-# SceneLevel Studio v0.8
+# SceneLevel Studio v0.9
 
-Oprava mobilní navigace (iPhone / Safari):
-- Spodní lišta **Snímky / Text / Fotka / Více** je nyní trvale viditelná i při procházení snímků a při úpravách obsahu.
-- Opravena chybná identifikace záložky Text, která dříve ukazovala na Snímky.
-- Odstraněn automatický `scrollIntoView` přepínající fokus a někdy odscrollovávající mobilní navigaci.
-- Samostatné oblasti pro procházení snímků a editaci vybrané záložky.
-- Verze assetů a service worker cache aktualizované na v0.8.
+Oprava mobilní navigace: hlavní lišta **Snímky / Text / Fotka / Více** je přesunutá mimo posuvnou oblast editoru na úroveň stránky a má pevnou pozici u spodního okraje včetně podpory bezpečné oblasti iPhonu. Při přepnutí záložek zůstává viditelná. Na domovské obrazovce projektů se skryje.
 
-Uložené projekty a formát dat z v0.7 zůstávají beze změny. Před nasazením doporučujeme zálohovat projekty v aplikaci.
-
-Nasazení: rozbal ZIP a nahraj **obsah složky** do kořene veřejného GitHub repozitáře, včetně `assets/`.
+Funkce editoru, formát projektů a lokální databáze zůstaly beze změny. Všechny soubory nahraj do kořene GitHub repozitáře (včetně `assets/`). Před aktualizací doporučujeme stáhnout zálohu projektu.
