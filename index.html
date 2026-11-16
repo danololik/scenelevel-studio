@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=0.9.0" />
+  <link rel="stylesheet" href="./styles.css?v=1.0.0" />
   <title>SceneLevel Studio</title>
-  <script src="./app.js?v=0.9.0" defer></script>
+  <script src="./app.js?v=1.0.0" defer></script>
 </head>
 <body>
   <header class="header">
@@ -51,6 +51,7 @@
         <label class="upload" for="photo-upload"><span class="upload-icon">＋</span><span>Vybrat fotografii ze zařízení</span><small>Nikdy ji nenahráváme na server</small></label>
         <input id="photo-upload" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/avif" hidden />
         <button id="paste-image" type="button" class="ghost secondary wide">Vložit obrázek ze schránky</button>
+        <div class="ios-paste-help"><label for="native-paste-target">iPhone: vložení přímo zkopírované fotky</label><div id="native-paste-target" class="native-paste-target" contenteditable="true" role="textbox" aria-label="Podrž prst a vyber Vložit" data-placeholder="Podrž prst zde → Vložit"></div><small>Pokud Safari nabídne jen odkaz, použij v Safari u fotky Uložit obrázek a potom Vybrat fotografii ze zařízení.</small></div>
         <small class="hint">Na počítači zkopíruj obrázek a stiskni Ctrl+V (Mac: Cmd+V). Obrázek můžeš také přetáhnout do náhledu.</small>
         <div class="zoom-line"><label for="photo-zoom">Přiblížení <output id="zoom-value">100 %</output></label><button id="reset-image" type="button" class="text-action">Reset fotky</button></div>
         <input id="photo-zoom" type="range" min="1" max="500" step="1" value="100" />

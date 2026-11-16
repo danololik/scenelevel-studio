@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '0.9.0';
+window.__SCENELEVEL_STUDIO_VERSION = '1.0.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -150,9 +150,9 @@ function renderSlide(c,slide,w,h){
   const gaps=layouts.map((_,i)=>i===0?0:i===1?18:32);
   const textBlockHeight=layouts.reduce((n,it,i)=>n+it.height+gaps[i],0);
   const logoHeight=56,logoGap=36;
-  const footerMargin=h===1920?250:105;
+  const footerMargin=h===1920?155:72;
   const totalHeight=textBlockHeight+logoHeight+logoGap;
-  const start=Math.max(h===1920?650:525,h-footerMargin-totalHeight);
+  const start=Math.max(80,h-footerMargin-totalHeight);
   if(photoImg)drawImageCover(c,photoImg,0,0,w,h,slide);
   shade(c,bg,start-300,start+38,w,h);
   // A subtle gradient grounds the text without a visible rectangular cut-off.
@@ -163,36 +163,42 @@ function renderSlide(c,slide,w,h){
 // News continuation: follows the second slide in the actual Photoshop PSD (photo / white logo / paragraph).
 // The caption expands within its allocated bottom area and shrinks text to avoid overflow.
 function renderNewsInfo(c,slide,w,h,photoImg,bg){
+  // Text drives the black footer, not a fixed percentage of the slide.
+  // Layout is bottom-anchored; longer copy pushes the logo and the fade higher.
   if(photoImg)drawImageCover(c,photoImg,0,0,w,h,slide);
-  const fadeStart=Math.round(h*.53),fadeEnd=Math.round(h*.76);
-  const [r,g,b]=rgb(bg);
-  const fade=c.createLinearGradient(0,fadeStart,0,fadeEnd);
-  fade.addColorStop(0,`rgba(${r},${g},${b},0)`);
-  fade.addColorStop(.65,`rgba(${r},${g},${b},.92)`);
-  fade.addColorStop(1,`rgba(${r},${g},${b},1)`);
-  c.fillStyle=fade;c.fillRect(0,fadeStart,w,h-fadeStart);
-  c.fillStyle=bg;c.fillRect(0,fadeEnd,w,h-fadeEnd);
   const tall=h/w>1.5;
-  const logoTop=Math.round(h*(tall?.69:.65));
-  drawLogo(c,logoTop,w,state.logoData);
-  let top=logoTop+75;
-  const areaBottom=h-(tall?120:70);
+  const bottomPadding=tall?135:80;
   const maxWidth=w-110;
-  const items=['primary','secondary'].filter(field=>(slide.values[field]||'').trim());
-  const gap=items.length===2?22:0;
-  const available=Math.max(55,areaBottom-top-gap);
+  const fields=['primary','secondary'].filter(field=>String(slide.values[field]||'').trim());
+  const gap=fields.length===2?22:0;
+  const logoHeight=57;
+  const logoToText=34;
+  const minTop=tall?280:165;
+  const available=Math.max(100,h-bottomPadding-minTop-logoHeight-logoToText-gap);
   let layouts=[];
-  let fontSize=items.length===2?48:54;
-  for(;fontSize>=19;fontSize-=2){
-    const temp=items.map((field,i)=>{
-      const size=i===1?Math.max(18,fontSize*.80):fontSize;
+  for(let fontSize=58;fontSize>=18;fontSize-=2){
+    layouts=fields.map((field,i)=>{
+      const size=i===1?Math.max(17,Math.round(fontSize*.82)):fontSize;
       const face='Oswald';
       const lines=getLines(c,slide.values[field],size,face,maxWidth);
-      return {field,face,size,lines,lineHeight:size*1.23,height:lines.length*size*1.23};
+      return {field,face,size,lines,lineHeight:size*1.21,height:lines.length*size*1.21};
     });
-    if(temp.reduce((n,v)=>n+v.height,0)<=available){layouts=temp;break;}
-    layouts=temp;
+    const total=layouts.reduce((n,v)=>n+v.height,0);
+    if(total<=available && layouts.every(v=>v.lines.every(line=>line.reduce((n,ch)=>n+ch.width,0)<=maxWidth+2)))break;
   }
+  const textHeight=layouts.reduce((n,v)=>n+v.height,0)+gap;
+  const logoTop=Math.max(minTop,h-bottomPadding-textHeight-logoToText-logoHeight);
+  const fadeStart=Math.max(0,logoTop-(tall?325:260));
+  const fadeEnd=Math.min(h,logoTop+logoHeight+15);
+  const [r,g,b]=rgb(bg);
+  const fade=c.createLinearGradient(0,fadeStart,0,Math.max(fadeStart+1,fadeEnd));
+  fade.addColorStop(0,`rgba(${r},${g},${b},0)`);
+  fade.addColorStop(.66,`rgba(${r},${g},${b},.89)`);
+  fade.addColorStop(1,`rgba(${r},${g},${b},1)`);
+  c.fillStyle=fade;c.fillRect(0,fadeStart,w,fadeEnd-fadeStart);
+  c.fillStyle=bg;c.fillRect(0,fadeEnd,w,h-fadeEnd);
+  drawLogo(c,logoTop,w,state.logoData);
+  let top=logoTop+logoHeight+logoToText;
   for(let i=0;i<layouts.length;i++){
     if(i)top+=gap;
     drawRich(c,slide,layouts[i],top,w);
@@ -422,7 +428,7 @@ async function pasteViaButton(){
       if(type){const blob=await item.getType(type);await setPhoto(new File([blob],'vlozeny-obrazek',{type}));return;}
     }
     toast('Ve schránce není přímo obrázek. Zkopíruj obrázek (ne jeho odkaz) nebo ho vyber ze zařízení.');
-  }catch(e){console.warn('Clipboard read unavailable',e);toast('Prohlížeč nepovolil přístup ke schránce. Na počítači zkus Ctrl+V / Cmd+V.');}
+  }catch(e){console.warn('Clipboard read unavailable',e);toast('Safari nepovolilo přímé vložení. Na iPhonu otevři Fotka → podrž prst v poli Vložit, nebo obrázek ulož do Fotek.');}
 }
 function resetPhotoPosition(){
   const slide=current();slide.zoom=100;slide.x=0;slide.y=0;
@@ -480,6 +486,19 @@ function bind(){
   $('remove-image').addEventListener('click',()=>{current().photoData='';syncPhotoControls();queuePreview();scheduleSave();});
   $('reset-image').addEventListener('click',resetPhotoPosition);
   $('paste-image').addEventListener('click',pasteViaButton);
+  const nativePaste=$('native-paste-target');
+  if(nativePaste){
+    nativePaste.addEventListener('paste',async e=>{
+      e.stopPropagation();
+      // The document-wide paste listener below handles image data from Safari's
+      // native Paste menu. Don't insert external HTML into our editor.
+      const file=Array.from(e.clipboardData?.items||[]).find(item=>item.type.startsWith('image/'))?.getAsFile();
+      if(file){e.preventDefault();nativePaste.textContent='';await setPhoto(file);return;}
+      e.preventDefault();nativePaste.textContent='';
+      toast('Schránka obsahuje odkaz nebo text místo obrázku. Zkus Kopírovat obrázek, případně Uložit do Fotek.');
+    });
+    nativePaste.addEventListener('input',()=>{nativePaste.textContent='';});
+  }
   document.addEventListener('paste',async e=>{
     const file=Array.from(e.clipboardData?.items||[]).find(item=>item.type.startsWith('image/'))?.getAsFile();
     if(!file)return; // Regular text paste must continue to work normally.

@@ -319,3 +319,11 @@
   #toast {bottom:calc(83px + env(safe-area-inset-bottom, 0px)) !important;}
 }
 @media (min-width:741px){body > #studio-mobile-navigation {display:none !important;}}
+
+/* v1.0 – iOS native-image-paste fallback */
+.ios-paste-help{display:grid;gap:8px;margin-top:13px;padding:12px;border:1px solid #3e3d48;border-radius:12px;background:#1b1a23}
+.ios-paste-help label{font-weight:650;font-size:12px;color:#eee}
+.native-paste-target{min-height:48px;display:flex;align-items:center;justify-content:center;border:1px dashed #77717c;border-radius:9px;background:#111116;color:#f3d1bb;font-size:13px;padding:10px;outline:none;-webkit-user-select:text;user-select:text}
+.native-paste-target:empty:before{content:attr(data-placeholder);pointer-events:none}
+.native-paste-target:focus{border-color:#f97316}
+.ios-paste-help small{font-size:11px;line-height:1.5;color:#b8b4bd}
