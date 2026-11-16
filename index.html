@@ -24,7 +24,7 @@
     <h2>Nový projekt</h2>
     <div class="template-grid">
       <button type="button" class="template-card" data-create="birthday"><span class="template-icon">🎂</span><strong>Narozeniny</strong><span>Úvodní snímky + závěrečný CTA</span></button>
-      <button type="button" class="template-card" data-create="news"><span class="template-icon">🎬</span><strong>Filmová novinka</strong><span>Novinka + závěrečný CTA</span></button>
+      <button type="button" class="template-card" data-create="news"><span class="template-icon">🎬</span><strong>Filmová novinka</strong><span>Úvodní novinka + informační snímky + CTA</span></button>
       <button type="button" class="template-card" data-create="memorial"><span class="template-icon">🕊</span><strong>In Memoriam</strong><span>Vzpomínka, role a Rest in Peace</span></button>
       <button type="button" class="template-card" data-create="blank"><span class="template-icon">✳</span><strong>Prázdný projekt</strong><span>Začni jedním snímkem a přidávej další</span></button>
     </div>
@@ -33,7 +33,7 @@
   </section>
   <main id="editor" hidden>
     <aside class="sidebar">
-      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.3</span></div>
+      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.4</span></div>
       <section class="panel">
         <label for="project-title">Název projektu</label>
         <input id="project-title" type="text" placeholder="Např. Narozeniny – 15. listopadu" maxlength="120" />
@@ -42,7 +42,7 @@
       <section class="panel">
         <div class="section-head"><strong>Aktuální snímek</strong><span id="slide-badge">01 / 02</span></div>
         <label for="slide-type">Typ šablony</label>
-        <select id="slide-type"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – známá role</option><option value="closing">In Memoriam – závěr</option><option value="cta">SceneLevel – závěrečný CTA</option></select>
+        <select id="slide-type"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="newsinfo">Novinka – další informace</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – známá role</option><option value="closing">In Memoriam – závěr</option><option value="cta">SceneLevel – závěrečný CTA</option></select>
         <div class="field-group" id="text-fields"></div>
         <div class="highlight-tool" id="highlight-tool"><strong>Zvýraznění jednotlivých znaků</strong><p>Označ část textu ve vybraném poli a potom klepni na barvu. Funguje i pro jediné písmeno.</p><div class="highlight-row"><input id="highlight-color" type="color" value="#f97316" aria-label="Barva zvýraznění" /><button class="ghost" id="highlight-apply">Obarvit výběr</button><button class="ghost secondary" id="highlight-clear">Zrušit barvu</button></div><small id="highlight-feedback">Nejdřív označ text.</small></div>
       </section>
@@ -53,10 +53,10 @@
         <button id="paste-image" type="button" class="ghost secondary wide">Vložit obrázek ze schránky</button>
         <small class="hint">Na počítači zkopíruj obrázek a stiskni Ctrl+V (Mac: Cmd+V). Obrázek můžeš také přetáhnout do náhledu.</small>
         <div class="zoom-line"><label for="photo-zoom">Přiblížení <output id="zoom-value">100 %</output></label><button id="reset-image" type="button" class="text-action">Reset fotky</button></div>
-        <input id="photo-zoom" type="range" min="50" max="250" step="1" value="100" />
+        <input id="photo-zoom" type="range" min="1" max="500" step="1" value="100" />
         <label for="photo-x">Pozice vodorovně</label><input id="photo-x" type="range" min="-100" max="100" step="1" value="0" />
         <label for="photo-y">Pozice svisle</label><input id="photo-y" type="range" min="-100" max="100" step="1" value="0" />
-        <small class="hint">Fotografii můžeš také posouvat prstem přímo v náhledu.</small>
+        <small class="hint">Fotku posouvej prstem nebo myší přímo na náhledu; dvěma prsty ji přibližuj a oddaluj. 100 % je automatický výřez na celou obrazovou plochu, nikoli původní rozlišení fotografie.</small>
         <div class="color-line"><label for="background">Barva pozadí</label><input id="background" type="color" value="#000000" /></div>
       </section>
       <section class="panel">
@@ -66,14 +66,22 @@
     </aside>
     <section class="workspace">
       <div class="workspace-top"><div><span class="eyebrow">NÁHLED V REÁLNÉM POMĚRU STRAN</span><h1 id="workspace-title">Narozeniny</h1></div><div class="export-actions"><button id="export-one" class="ghost">Uložit PNG</button><button id="export-all" class="primary">Export celého carouselu (.zip)</button></div></div>
-      <div class="canvas-frame"><canvas id="post-canvas" width="1080" height="1350" aria-label="Náhled příspěvku SceneLevel"></canvas></div>
+      <div class="canvas-frame"><canvas id="post-canvas" width="1080" height="1350" aria-label="Náhled příspěvku SceneLevel; tažením posunout, dvěma prsty změnit velikost"></canvas></div>
+      <div class="quick-photo" aria-label="Rychlé úpravy fotografie u náhledu">
+        <span class="quick-photo-title">Fotka <small>pohyb prstem · zoom dvěma prsty</small></span>
+        <button type="button" id="quick-minus" class="ghost mini" title="Oddálit" aria-label="Oddálit fotografii">−</button>
+        <input type="range" id="quick-zoom" min="1" max="500" step="1" value="100" aria-label="Přiblížení fotografie u náhledu" />
+        <button type="button" id="quick-plus" class="ghost mini" title="Přiblížit" aria-label="Přiblížit fotografii">+</button>
+        <output id="quick-zoom-value" for="quick-zoom">100 %</output>
+        <button type="button" id="quick-reset" class="ghost secondary mini" title="Resetovat pozici a zoom fotografie" aria-label="Resetovat fotografii">↺</button>
+      </div>
       <p class="preview-note">Výstup se vykresluje v plném rozlišení. U 9:16 ponecháváme více místa kolem textu kvůli rozhraní sociálních sítí.</p>
       <div class="slide-header"><strong>Snímky projektu</strong><div class="slide-operations"><button class="ghost secondary mini" id="move-left" title="Posunout doleva">←</button><button class="ghost secondary mini" id="move-right" title="Posunout doprava">→</button><button class="ghost secondary mini" id="duplicate-slide">Duplikovat</button><button class="ghost secondary mini danger" id="delete-slide">Smazat</button></div></div>
       <div class="slide-strip" id="slide-strip"></div>
-      <div class="add-slide-row"><select id="new-slide-type" aria-label="Šablona pro nový snímek"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – role</option><option value="closing">In Memoriam – závěr</option><option value="cta">Závěrečný CTA</option></select><button class="ghost" id="add-slide">＋ Přidat snímek</button></div>
+      <div class="add-slide-row"><select id="new-slide-type" aria-label="Šablona pro nový snímek"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="newsinfo">Novinka – další informace</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – role</option><option value="closing">In Memoriam – závěr</option><option value="cta">Závěrečný CTA</option></select><button class="ghost" id="add-slide">＋ Přidat snímek</button><button class="primary" id="add-news-info" type="button" hidden>＋ Další informace</button></div>
     </section>
   </main>
-  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.3</span></footer>
+  <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.4</span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

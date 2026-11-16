@@ -8,6 +8,7 @@ const DEFAULT_CTA_LOGO = './assets/logo_name_colour.svg';
 const TYPES = {
   birthday: { label: 'Narozeniny', fields: [ ['primary','Jméno'], ['secondary','Věk / druhý řádek'], ['detail','Známé filmy a seriály'] ], defaults: {primary:'Robert Patrick',secondary:'turns 68 today',detail:'Terminator 2 · The X-Files · Peacemaker'}, defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'} },
   news: { label:'Filmová novinka', fields:[['primary','Hlavní titulek'],['secondary','Doplňující titulek'],['detail','Další informace']],defaults:{primary:'Jack Sparrow could return',secondary:'',detail:''},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'}},
+  newsinfo: {label:'Novinka – další informace',fields:[['primary','Text k novince'],['secondary','Doplňující řádek']],defaults:{primary:'Here you can add more details about the story, the cast, or the production. Each information slide has its own image and text.',secondary:'',detail:''},defaultsColor:{primary:'#eeeeee',secondary:'#b8b8b8',detail:'#b8b8b8'}},
   memorial: { label:'In Memoriam', fields:[['primary','Jméno'],['secondary','Roky života'],['detail','Doplňující text']],defaults:{primary:'Jméno herce',secondary:'1950 – 2026',detail:''},defaultsColor:{primary:'#ffffff',secondary:'#d2d2d2',detail:'#aaa'}},
   role: { label:'Nejznámější role', fields:[['primary','Jméno postavy'],['secondary','Film / seriál'],['detail','Doplňující text']],defaults:{primary:'Jméno postavy',secondary:'Název filmu nebo seriálu',detail:''},defaultsColor:{primary:'#ffffff',secondary:ORANGE,detail:'#b8b8b8'}},
   closing: { label:'Rest in Peace', fields:[['primary','Hlavní text'],['secondary','Jméno'],['detail','Roky života']],defaults:{primary:'REST IN PEACE',secondary:'Jméno herce',detail:''},defaultsColor:{primary:'#ffffff',secondary:'#c8c8c8',detail:'#b0b0b0'}},
@@ -19,8 +20,8 @@ function makeSlide(type='birthday'){
 }
 function makeId(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 function makeProject(template='birthday'){
-  const slides=template==='news'?[makeSlide('news'),makeSlide('cta')]:template==='memorial'?[makeSlide('memorial'),makeSlide('role'),makeSlide('closing')]:template==='blank'?[makeSlide('birthday')]:[makeSlide('birthday'),makeSlide('cta')];
-  if(template==='news')slides[1].values.detail='Discover more film news at:\nscenelevel.com';
+  const slides=template==='news'?[makeSlide('news'),makeSlide('newsinfo'),makeSlide('cta')]:template==='memorial'?[makeSlide('memorial'),makeSlide('role'),makeSlide('closing')]:template==='blank'?[makeSlide('birthday')]:[makeSlide('birthday'),makeSlide('cta')];
+  if(template==='news')slides[2].values.detail='Read the full story at:\nscenelevel.com';
   if(template==='blank')slides[0].values={primary:'',secondary:'',detail:''};
   const names={birthday:'Narozeninový carousel',news:'Filmová novinka',memorial:'In Memoriam',blank:'Nový projekt'};
   return {id:makeId(),version:1,title:names[template]||names.blank,format:'4:5',logoData:'',slides,active:0,createdAt:Date.now(),updatedAt:Date.now()};
@@ -60,14 +61,14 @@ function queuePreview(){if(rendering)return;rendering=true;requestAnimationFrame
 function drawPreview(){const d=dims();if(canvas.width!==d.w||canvas.height!==d.h){canvas.width=d.w;canvas.height=d.h;}renderSlide(ctx,current(),d.w,d.h);}
 function drawImageCover(c,image,x,y,w,h,slide){
   if(!image)return;
+  // 100% = cover the image area; native source resolution never changes the zoom percentage.
+  // Very small zoom (down to 1%) intentionally shows the background around the photo.
   const baseScale=Math.max(w/image.width,h/image.height);
-  const scale=baseScale*(slide.zoom||100)/100;
+  const scale=baseScale*Math.max(1,Math.min(500,Number(slide.zoom)||100))/100;
   const dw=image.width*scale,dh=image.height*scale;
-  // Below 100 % allow the entire image to show with the selected background around it.
-  // Panning works both when the photo is larger and when it is smaller than the frame.
-  const panX=Math.abs(dw-w)/2,panY=Math.abs(dh-h)/2;
-  const dx=x+(w-dw)/2+panX*(slide.x||0)/100;
-  const dy=y+(h-dh)/2+panY*(slide.y||0)/100;
+  // X/Y are normalized to the picture frame, so small images can still be freely moved.
+  const dx=x+(w-dw)/2+(Number(slide.x)||0)*w/200;
+  const dy=y+(h-dh)/2+(Number(slide.y)||0)*h/200;
   c.save();c.beginPath();c.rect(x,y,w,h);c.clip();c.drawImage(image,dx,dy,dw,dh);c.restore();
 }
 function shade(c,bg,from,to,w,h){const grad=c.createLinearGradient(0,Math.max(0,from),0,Math.max(from+1,to));grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(1,bg);c.fillStyle=grad;c.fillRect(0,Math.max(0,from),w,h-Math.max(0,from));}
@@ -131,6 +132,7 @@ function renderSlide(c,slide,w,h){
   const photo=getImage(slide.photoData);const photoImg=photo?.loaded?photo.image:null;
   const isCta=slide.type==='cta';
   if(isCta){renderCTA(c,slide,w,h,photoImg,bg);return;}
+  if(slide.type==='newsinfo'){renderNewsInfo(c,slide,w,h,photoImg,bg);return;}
   const maxTextW=w-100;
   const layouts=['primary','secondary','detail'].map(field=>fitText(c,slide,field,maxTextW)).filter(Boolean);
   const gaps=layouts.map((_,i)=>i===0?0:i===1?18:32);
@@ -145,6 +147,45 @@ function renderSlide(c,slide,w,h){
   drawLogo(c,start,w,state.logoData);
   let y=start+logoHeight+logoGap;
   for(let i=0;i<layouts.length;i++){y+=gaps[i];drawRich(c,slide,layouts[i],y,w);y+=layouts[i].height;}
+}
+// News continuation: follows the second slide in the actual Photoshop PSD (photo / white logo / paragraph).
+// The caption expands within its allocated bottom area and shrinks text to avoid overflow.
+function renderNewsInfo(c,slide,w,h,photoImg,bg){
+  if(photoImg)drawImageCover(c,photoImg,0,0,w,h,slide);
+  const fadeStart=Math.round(h*.53),fadeEnd=Math.round(h*.76);
+  const [r,g,b]=rgb(bg);
+  const fade=c.createLinearGradient(0,fadeStart,0,fadeEnd);
+  fade.addColorStop(0,`rgba(${r},${g},${b},0)`);
+  fade.addColorStop(.65,`rgba(${r},${g},${b},.92)`);
+  fade.addColorStop(1,`rgba(${r},${g},${b},1)`);
+  c.fillStyle=fade;c.fillRect(0,fadeStart,w,h-fadeStart);
+  c.fillStyle=bg;c.fillRect(0,fadeEnd,w,h-fadeEnd);
+  const tall=h/w>1.5;
+  const logoTop=Math.round(h*(tall?.69:.65));
+  drawLogo(c,logoTop,w,state.logoData);
+  let top=logoTop+75;
+  const areaBottom=h-(tall?120:70);
+  const maxWidth=w-110;
+  const items=['primary','secondary'].filter(field=>(slide.values[field]||'').trim());
+  const gap=items.length===2?22:0;
+  const available=Math.max(55,areaBottom-top-gap);
+  let layouts=[];
+  let fontSize=items.length===2?48:54;
+  for(;fontSize>=19;fontSize-=2){
+    const temp=items.map((field,i)=>{
+      const size=i===1?Math.max(18,fontSize*.80):fontSize;
+      const face='Oswald';
+      const lines=getLines(c,slide.values[field],size,face,maxWidth);
+      return {field,face,size,lines,lineHeight:size*1.23,height:lines.length*size*1.23};
+    });
+    if(temp.reduce((n,v)=>n+v.height,0)<=available){layouts=temp;break;}
+    layouts=temp;
+  }
+  for(let i=0;i<layouts.length;i++){
+    if(i)top+=gap;
+    drawRich(c,slide,layouts[i],top,w);
+    top+=layouts[i].height;
+  }
 }
 function drawCtaLogo(c,top,w,logo){
   const entry=getImage(logo||DEFAULT_CTA_LOGO);
@@ -228,6 +269,19 @@ function renderCTA(c,slide,w,h,photoImg,bg){
   drawCtaField(c,slide,'detail',tall?h-260:h-184,tall?170:142,w-95,w,tall?52:52,1.28);
 }
 async function initFonts(){try{await Promise.all([document.fonts.load('90px Anton'),document.fonts.load('60px Oswald')]);}catch{}queuePreview();}
+function clampZoom(n){return Math.max(1,Math.min(500,Math.round(Number(n)||1)));}
+function syncPhotoControls(){
+  const slide=current();const z=clampZoom(slide.zoom);
+  slide.zoom=z;
+  $('photo-zoom').value=z;$('zoom-value').value=`${z} %`;$('zoom-value').textContent=`${z} %`;
+  $('quick-zoom').value=z;$('quick-zoom-value').textContent=`${z} %`;
+  const enabled=Boolean(slide.photoData);
+  for(const id of ['quick-zoom','quick-minus','quick-plus','quick-reset'])$(id).disabled=!enabled;
+}
+function setZoom(value,persist=true){
+  current().zoom=clampZoom(value);syncPhotoControls();queuePreview();
+  if(persist)scheduleSave();
+}
 function renderFields(){
   const slide=current(),def=TYPES[slide.type];
   $('slide-type').value=slide.type;$('slide-badge').textContent=`${String(state.active+1).padStart(2,'0')} / ${String(state.slides.length).padStart(2,'0')}`;
@@ -239,7 +293,7 @@ function renderFields(){
     ['select','keyup','mouseup','touchend','focus'].forEach(evt=>text.addEventListener(evt,record));
     text.addEventListener('input',()=>{slide.values[field]=text.value;slide.highlights[field]={};record();queuePreview();scheduleSave();});
   }
-  $('photo-zoom').value=slide.zoom;$('zoom-value').value=`${slide.zoom} %`;$('zoom-value').textContent=`${slide.zoom} %`;
+  syncPhotoControls();
   $('photo-x').value=slide.x;$('photo-y').value=slide.y;$('background').value=safeColor(slide.bg);
 }
 function deleteSlideAt(i){
@@ -255,7 +309,12 @@ function renderSlides(){
   $('slide-strip').querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>deleteSlideAt(Number(el.dataset.remove)));
   $('move-left').disabled=state.active===0;$('move-right').disabled=state.active>=state.slides.length-1;$('delete-slide').disabled=state.slides.length<=1;
 }
-function syncUI(){ $('project-title').value=state.title;$('format').value=state.format;rememberedSelection=null;renderFields();renderSlides();queuePreview(); }
+function syncUI(){
+  $('project-title').value=state.title;$('format').value=state.format;
+  rememberedSelection=null;renderFields();renderSlides();queuePreview();
+  $('new-slide-type').value=state.slides[0]?.type==='news'?'newsinfo':state.slides[0]?.type==='memorial'?'role':'birthday';
+  $('add-news-info').hidden=state.slides[0]?.type!=='news';
+}
 function scheduleSave(){if(!ready||!openedProject)return;$('save-state').textContent='Ukládání…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveProject().catch(console.error);},450);}
 function db(){return new Promise((resolve,reject)=>{
   if(!('indexedDB'in window))return reject(Error('IndexedDB unavailable'));
@@ -332,17 +391,36 @@ async function pasteViaButton(){
     toast('Ve schránce není přímo obrázek. Zkopíruj obrázek (ne jeho odkaz) nebo ho vyber ze zařízení.');
   }catch(e){console.warn('Clipboard read unavailable',e);toast('Prohlížeč nepovolil přístup ke schránce. Na počítači zkus Ctrl+V / Cmd+V.');}
 }
+function resetPhotoPosition(){
+  const slide=current();slide.zoom=100;slide.x=0;slide.y=0;
+  syncPhotoControls();$('photo-x').value=0;$('photo-y').value=0;
+  queuePreview();scheduleSave();
+}
+function addSlideOfType(type){
+  const slide=makeSlide(type),endIndex=state.slides.length-1;
+  // Dedicated continuation action always inserts before the final CTA, avoiding out-of-order stories.
+  const index=type==='newsinfo'&&state.slides[endIndex]?.type==='cta' ? endIndex :
+    (state.slides[endIndex]?.type==='cta'&&endIndex>=state.active?endIndex:state.active+1);
+  state.slides.splice(index,0,slide);state.active=index;syncUI();scheduleSave();
+}
 function bind(){
   $('go-home').addEventListener('click',goHome);
   $('dashboard').querySelectorAll('[data-create]').forEach(button=>button.addEventListener('click',()=>createProject(button.dataset.create)));
   $('project-title').addEventListener('input',e=>{state.title=e.target.value;scheduleSave();});
   $('format').addEventListener('change',e=>{state.format=e.target.value;queuePreview();scheduleSave();});
   $('slide-type').addEventListener('change',e=>{const old=current(),t=e.target.value;state.slides[state.active]={...makeSlide(t),id:old.id,photoData:old.photoData,zoom:old.zoom,x:old.x,y:old.y,bg:old.bg};syncUI();scheduleSave();});
-  for(const [id,key] of [['photo-zoom','zoom'],['photo-x','x'],['photo-y','y'],['background','bg']])$(id).addEventListener('input',e=>{current()[key]=key==='bg'?e.target.value:Number(e.target.value);if(key==='zoom')$('zoom-value').textContent=e.target.value+' %';queuePreview();scheduleSave();});
+  for(const [id,key] of [['photo-x','x'],['photo-y','y'],['background','bg']])$(id).addEventListener('input',e=>{
+    current()[key]=key==='bg'?e.target.value:Number(e.target.value);queuePreview();scheduleSave();
+  });
+  $('photo-zoom').addEventListener('input',e=>setZoom(e.target.value));
+  $('quick-zoom').addEventListener('input',e=>setZoom(e.target.value));
+  $('quick-minus').addEventListener('click',()=>setZoom(current().zoom<=20?current().zoom-2:current().zoom-10));
+  $('quick-plus').addEventListener('click',()=>setZoom(current().zoom<20?current().zoom+2:current().zoom+10));
+  $('quick-reset').addEventListener('click',resetPhotoPosition);
   $('photo-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await setPhoto(file);e.target.value='';});
   $('logo-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{state.logoData=await readDataURL(file);queuePreview();scheduleSave();toast('Logo bylo přiřazeno všem snímkům.');}catch{toast('Logo se nepodařilo načíst.');}e.target.value='';});
-  $('remove-image').addEventListener('click',()=>{current().photoData='';queuePreview();scheduleSave();});
-  $('reset-image').addEventListener('click',()=>{const slide=current();slide.zoom=100;slide.x=0;slide.y=0;renderFields();queuePreview();scheduleSave();});
+  $('remove-image').addEventListener('click',()=>{current().photoData='';syncPhotoControls();queuePreview();scheduleSave();});
+  $('reset-image').addEventListener('click',resetPhotoPosition);
   $('paste-image').addEventListener('click',pasteViaButton);
   document.addEventListener('paste',async e=>{
     const file=Array.from(e.clipboardData?.items||[]).find(item=>item.type.startsWith('image/'))?.getAsFile();
@@ -354,7 +432,8 @@ function bind(){
   canvas.addEventListener('drop',async e=>{const file=Array.from(e.dataTransfer?.files||[]).find(file=>file.type.startsWith('image/'));if(!file)return;e.preventDefault();await setPhoto(file);});
   $('highlight-apply').addEventListener('click',()=>markSelection($('highlight-color').value));
   $('highlight-clear').addEventListener('click',()=>markSelection(null));
-  $('add-slide').addEventListener('click',()=>{const slide=makeSlide($('new-slide-type').value);const endIndex=state.slides.length-1;const insertBeforeLast=state.slides[endIndex]?.type==='cta'&&endIndex>=state.active;const index=insertBeforeLast?endIndex:state.active+1;state.slides.splice(index,0,slide);state.active=index;syncUI();scheduleSave();});
+  $('add-slide').addEventListener('click',()=>addSlideOfType($('new-slide-type').value));
+  $('add-news-info').addEventListener('click',()=>addSlideOfType('newsinfo'));
   $('duplicate-slide').addEventListener('click',()=>{const copy=structuredClone(current());copy.id=makeId();state.slides.splice(state.active+1,0,copy);state.active++;syncUI();scheduleSave();});
   $('delete-slide').addEventListener('click',()=>deleteSlideAt(state.active));
   for(const [id,dx]of [['move-left',-1],['move-right',1]])$(id).addEventListener('click',()=>{const to=state.active+dx;if(to<0||to>=state.slides.length)return;[state.slides[state.active],state.slides[to]]=[state.slides[to],state.slides[state.active]];state.active=to;syncUI();scheduleSave();});
@@ -362,11 +441,48 @@ function bind(){
   $('export-all').addEventListener('click',()=>exportAll());
   $('project-download').addEventListener('click',()=>{downloadBlob(new Blob([JSON.stringify(state)],{type:'application/json'}),`${slug(state.title)||'scenelevel'}-projekt.json`);});
   $('project-import').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const item=JSON.parse(await file.text());if(!validateProject(item))throw Error('Invalid project');const imported=structuredClone(item);imported.id=makeId();imported.createdAt=imported.updatedAt=Date.now();await flushProject();await transact('projects','readwrite',store=>store.put(imported));state=imported;setScreen(true);syncUI();toast('Projekt importován jako nový, ostatní projekty zůstaly zachované.');}catch{toast('Neplatný soubor projektu.');}e.target.value='';});
-  let gesture=null;
-  canvas.addEventListener('pointerdown',e=>{if(!current().photoData)return;gesture={x:e.clientX,y:e.clientY,ox:current().x,oy:current().y};canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
-  canvas.addEventListener('pointermove',e=>{if(!gesture)return;const rect=canvas.getBoundingClientRect();current().x=Math.max(-100,Math.min(100,gesture.ox+(e.clientX-gesture.x)/rect.width*200));current().y=Math.max(-100,Math.min(100,gesture.oy+(e.clientY-gesture.y)/rect.height*220));$('photo-x').value=current().x;$('photo-y').value=current().y;queuePreview();});
-  function release(){if(gesture){gesture=null;canvas.style.cursor='grab';scheduleSave();}}
+  // Direct manipulation: single-finger / mouse drag moves, two-finger pinch zooms.
+  const pointers=new Map();let gesture=null;
+  function beginGesture(){
+    const points=[...pointers.values()];
+    if(!points.length){gesture=null;return;}
+    const center=points.reduce((p,q)=>({x:p.x+q.x/points.length,y:p.y+q.y/points.length}),{x:0,y:0});
+    const dist=points.length>1?Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y):0;
+    gesture={center,dist,startZoom:current().zoom,startX:current().x,startY:current().y};
+  }
+  canvas.addEventListener('pointerdown',e=>{
+    if(!current().photoData)return;
+    e.preventDefault();pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{canvas.setPointerCapture(e.pointerId);}catch{}
+    beginGesture();canvas.style.cursor='grabbing';
+  });
+  canvas.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId)||!gesture)return;
+    e.preventDefault();pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const points=[...pointers.values()];const rect=canvas.getBoundingClientRect();
+    const center=points.reduce((p,q)=>({x:p.x+q.x/points.length,y:p.y+q.y/points.length}),{x:0,y:0});
+    if(points.length>=2&&gesture.dist>0){
+      const distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
+      current().zoom=clampZoom(gesture.startZoom*(distance/gesture.dist));
+      syncPhotoControls();
+    }
+    current().x=Math.max(-200,Math.min(200,gesture.startX+(center.x-gesture.center.x)/rect.width*200));
+    current().y=Math.max(-200,Math.min(200,gesture.startY+(center.y-gesture.center.y)/rect.height*200));
+    $('photo-x').value=Math.max(-100,Math.min(100,current().x));$('photo-y').value=Math.max(-100,Math.min(100,current().y));
+    queuePreview();
+  });
+  function release(e){
+    if(!pointers.has(e.pointerId))return;
+    pointers.delete(e.pointerId);beginGesture();
+    if(!pointers.size){canvas.style.cursor='grab';scheduleSave();}
+  }
   canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);
+  canvas.addEventListener('lostpointercapture',e=>{if(pointers.has(e.pointerId))release(e);});
+  canvas.addEventListener('wheel',e=>{
+    if(!current().photoData)return;
+    e.preventDefault();const factor=Math.exp(-e.deltaY*.003);
+    setZoom(current().zoom*factor);
+  },{passive:false});
 }
 function markSelection(color){
   const s=rememberedSelection;const text=s?$('field-'+s.field):null;

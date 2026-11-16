@@ -40,3 +40,75 @@
 #go-home{border-color:#453837}
 @media(max-width:1000px){.template-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.project-list{grid-template-columns:1fr}}
 @media(max-width:600px){.dashboard{padding:24px 14px 70px}.template-grid{gap:9px}.template-card{min-height:167px;padding:13px}.template-card strong{font-size:14px}.template-card span:last-child{font-size:11px}.project-card{flex-wrap:wrap}.project-buttons{width:100%;justify-content:flex-end}.dashboard-heading{margin-bottom:20px}}
+
+
+/* v0.4 – instant photo controls next to the preview, usable without scrolling. */
+.quick-photo{display:flex;align-items:center;justify-content:center;gap:8px;width:min(100%,550px);border:1px solid #33323f;border-radius:13px;background:#191820;padding:9px 11px}
+.quick-photo-title{font-size:12px;font-weight:700;white-space:nowrap}
+.quick-photo-title small{display:block;color:#a5a1af;font-weight:400;font-size:10px;margin-top:3px}
+.quick-photo #quick-zoom{width:100%;min-width:45px;max-width:150px;accent-color:#f97316;touch-action:pan-x}
+.quick-photo output{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:42px;text-align:center;color:#ffb17a}
+.quick-photo .mini{font-size:16px;line-height:1;padding:7px 9px;min-width:30px;min-height:30px}
+.add-slide-row{align-items:center;flex-wrap:wrap}
+.add-slide-row .primary{font-size:12px}
+#post-canvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+/* Phone: persistent compact preview above independently scrolling editor fields. */
+@media (max-width:740px){
+  html,body{height:100%;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
+  .header{flex:none;padding:7px 11px;gap:7px;min-height:56px;flex-wrap:nowrap}
+  .identity{gap:7px}.identity-icon{height:30px;width:30px;border-radius:8px;font-size:12px}
+  .identity-text strong{font-size:12px}.identity-text small{display:none}
+  .header-actions{width:auto;flex:1;min-width:0;justify-content:flex-end;padding:0;gap:5px}
+  .header-actions #save-state{display:none}
+  .header-actions #go-home{font-size:11px;padding:8px}
+  .header-actions #project-download{font-size:10px;padding:8px}
+  .header-actions .file-label{font-size:10px;padding:8px}
+  #editor{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  #editor .workspace{flex:none;min-height:0;max-height:min(65dvh,540px);overflow-y:auto;order:0;padding:8px 9px 5px;gap:6px;overscroll-behavior:contain}
+  #editor .sidebar{flex:1;min-height:0;overflow-y:auto;order:1;padding:10px 12px 30px;gap:8px;overscroll-behavior:contain}
+  #editor .canvas-frame{width:fit-content;max-width:100%;flex-shrink:0}
+  #editor #post-canvas{width:auto;height:clamp(205px,35dvh,355px);max-width:100%}
+  #editor .workspace-top{flex-direction:row;align-items:center;gap:5px}
+  #editor .workspace-top h1{font-size:15px;letter-spacing:0;margin:0}
+  #editor .workspace-top .eyebrow{display:none}
+  #editor .export-actions{width:auto;justify-content:flex-end;flex-wrap:nowrap;gap:5px}
+  #editor .export-actions button{flex:none;padding:7px 8px;font-size:10px;min-height:30px}
+  #editor #export-all{max-width:115px;white-space:normal;line-height:1.1}
+  #editor .preview-note{display:none}
+  #editor .quick-photo{gap:6px;padding:5px 7px;width:min(100%,450px)}
+  #editor .quick-photo-title{font-size:10px}
+  #editor .quick-photo-title small{display:none}
+  #editor .quick-photo .mini{padding:5px;min-width:27px;min-height:28px}
+  #editor .slide-header{flex-direction:row;align-items:center;margin-top:0}
+  #editor .slide-header strong{font-size:11px}
+  #editor .slide-operations .mini{padding:5px 7px;font-size:10px}
+  #editor .slide-strip{gap:5px;padding-bottom:2px}
+  #editor .slide-item{flex-basis:59px}
+  #editor .slide-item .slide-thumb{min-height:83px;padding:4px;gap:2px}
+  #editor .slide-number{font-size:9px}
+  #editor .slide-thumbnail{height:44px;width:45px;font-size:9px;padding:3px}
+  #editor .slide-caption{font-size:9px;max-width:51px}
+  #editor .slide-remove{width:20px;height:20px;font-size:14px;right:2px;top:2px}
+  #editor .add-slide-row{gap:5px;flex-wrap:nowrap}
+  #editor .add-slide-row select{font-size:11px;padding:7px 5px;flex:1;max-width:none}
+  #editor .add-slide-row button{font-size:10px;padding:8px 7px;white-space:nowrap}
+  #editor .panel{padding:12px}
+  #editor .aside-title{display:none}
+  #editor .sidebar .panel:first-of-type{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #editor .sidebar .panel:first-of-type>label{grid-column:1}
+  #editor .sidebar .panel:first-of-type>input{grid-column:1}
+  #editor .sidebar .panel:first-of-type>.side-by-side{grid-column:2;grid-row:1/3;align-self:end}
+  #editor .sidebar .panel:first-of-type .side-by-side label{display:none}
+  #editor .sidebar .panel:first-of-type input{width:100%;min-width:0}
+  #editor .sidebar .panel:first-of-type select{padding:8px 5px}
+  .footer{display:none}
+  #dashboard{flex:1;overflow-y:auto;min-height:0}
+}
+@media (max-width:370px){
+  #editor #post-canvas{height:clamp(185px,32dvh,290px)}
+  .header-actions #project-download{display:none}
+  #editor .workspace-top h1{font-size:13px}
+  #editor .export-actions button{font-size:9px}
+}

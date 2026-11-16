@@ -1,4 +1,4 @@
-# SceneLevel Studio v0.3
+# SceneLevel Studio v0.4
 
 Statický editor na GitHub Pages, bez buildování a bez serveru.
 
@@ -19,3 +19,13 @@ Statický editor na GitHub Pages, bez buildování a bez serveru.
 Projekty zůstávají **lokálně v konkrétním prohlížeči a zařízení**. Smazání dat webu či soukromý režim je může odstranit. Před důležitými úpravami či přesunem mezi zařízeními si stáhni JSON zálohu. Velké množství fotografií může vyčerpat úložiště. Projekty nejsou dostupné automaticky na jiných zařízeních.
 
 Toto je vlastní editor pro příspěvky, nikoli plná PSD kompatibilita. CTA je přepracován dle screenshotu; případné pixelové rozdíly proti Photoshopu lze dále dolaďovat.
+
+
+## Verze v0.4
+- Filmová novinka nyní začíná 3 snímky: titulní novinka, informační snímek a CTA.
+- Tlačítko **Další informace** přidává další informační snímek před závěrečné CTA.
+- Informační snímky mají vlastní fotografii a delší text na dolním černém přechodu podle PSD.
+- Zoom 1–500 % (100 % = automatické pokrytí obrazové oblasti; není to měřítko původních pixelů).
+- Na obrázku funguje tažení a pinch dvěma prsty; u náhledu je rychlý zoom a reset.
+- Na malých displejích je nahoře kompaktní náhled s ovládáním a spodní část stránky tvoří samostatně scrollovatelný editor.
+- Uložené projekty z v0.3 se nemění ani nemažou.
