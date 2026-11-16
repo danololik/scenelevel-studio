@@ -1,3 +1,7 @@
+## SceneLevel Studio v0.6
+
+Mobilní editor má čtyři samostatné záložky: Snímky, Text, Fotka a Více. Náhled zůstává nahoře; na mobilu nejsou přes jednotlivé náhledy mazací křížky. Mazání vybraného snímku vyžaduje potvrzení. Všechny funkce a úložiště v0.5 zachovány.
+
 # SceneLevel Studio v0.5 — oprava filmových novinek
 
 Toto je kompletní sada souborů pro GitHub Pages. Nahraj **obsah** rozbalené složky do kořene repozitáře `scenelevel-studio` (včetně `assets/`) a přepiš staré soubory.

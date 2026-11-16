@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=0.5.0" />
+  <link rel="stylesheet" href="./styles.css?v=0.6.0" />
   <title>SceneLevel Studio</title>
-  <script src="./app.js?v=0.5.0" defer></script>
+  <script src="./app.js?v=0.6.0" defer></script>
 </head>
 <body>
   <header class="header">
@@ -31,22 +31,28 @@
     <div class="dashboard-list-head"><h2>Moje projekty</h2><small>Uloženo jen na tomto zařízení · pro přenos použij zálohu</small></div>
     <div id="project-list" class="project-list"></div>
   </section>
-  <main id="editor" hidden>
+  <main id="editor" data-mobile-tab="text" hidden>
+    <nav class="mobile-tabs" aria-label="Nástroje editoru">
+      <button type="button" data-mobile-tab="slides"><span aria-hidden="true">▦</span><span>Snímky</span></button>
+      <button type="button" data-mobile-tab="text" aria-current="page"><span aria-hidden="true">T</span><span>Text</span></button>
+      <button type="button" data-mobile-tab="photo"><span aria-hidden="true">▧</span><span>Fotka</span></button>
+      <button type="button" data-mobile-tab="more"><span aria-hidden="true">⚙</span><span>Více</span></button>
+    </nav>
     <aside class="sidebar">
-      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.5</span></div>
-      <section class="panel">
+      <div class="aside-title"><span>EDITOR</span><span class="badge">v0.6</span></div>
+      <section class="panel mobile-settings-panel">
         <label for="project-title">Název projektu</label>
         <input id="project-title" type="text" placeholder="Např. Narozeniny – 15. listopadu" maxlength="120" />
         <div class="side-by-side"><div><label for="format">Formát výstupu</label><select id="format"><option value="4:5">Instagram 4:5 (1080×1350)</option><option value="9:16">TikTok / Stories 9:16 (1080×1920)</option></select></div></div>
       </section>
-      <section class="panel">
+      <section class="panel mobile-text-panel">
         <div class="section-head"><strong>Aktuální snímek</strong><span id="slide-badge">01 / 02</span></div>
         <label for="slide-type">Typ šablony</label>
         <select id="slide-type"><option value="birthday">Narozeniny</option><option value="news">Filmová novinka</option><option value="newsinfo">Novinka – další informace</option><option value="memorial">In Memoriam – úvod</option><option value="role">In Memoriam – známá role</option><option value="closing">In Memoriam – závěr</option><option value="cta">SceneLevel – závěrečný CTA</option></select>
         <div class="field-group" id="text-fields"></div>
         <div class="highlight-tool" id="highlight-tool"><strong>Zvýraznění jednotlivých znaků</strong><p>Označ část textu ve vybraném poli a potom klepni na barvu. Funguje i pro jediné písmeno.</p><div class="highlight-row"><input id="highlight-color" type="color" value="#f97316" aria-label="Barva zvýraznění" /><button class="ghost" id="highlight-apply">Obarvit výběr</button><button class="ghost secondary" id="highlight-clear">Zrušit barvu</button></div><small id="highlight-feedback">Nejdřív označ text.</small></div>
       </section>
-      <section class="panel">
+      <section class="panel mobile-photo-panel">
         <div class="section-head"><strong>Fotografie</strong><button class="text-action" id="remove-image">Odstranit</button></div>
         <label class="upload" for="photo-upload"><span class="upload-icon">＋</span><span>Vybrat fotografii ze zařízení</span><small>Nikdy ji nenahráváme na server</small></label>
         <input id="photo-upload" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif,image/avif" hidden />
@@ -59,10 +65,16 @@
         <small class="hint">Fotku posouvej prstem nebo myší přímo na náhledu; dvěma prsty ji přibližuj a oddaluj. 100 % je automatický výřez na celou obrazovou plochu, nikoli původní rozlišení fotografie.</small>
         <div class="color-line"><label for="background">Barva pozadí</label><input id="background" type="color" value="#000000" /></div>
       </section>
-      <section class="panel">
+      <section class="panel mobile-logo-panel">
         <strong>Logo SceneLevel</strong><p class="small-muted">Na běžných snímcích je bílé logo, na závěrečném CTA barevné. Vlastní PNG / SVG můžeš nahrát jako náhradu pro celý projekt.</p>
         <label for="logo-upload" class="ghost secondary file-label wide">Nahrát logo</label><input id="logo-upload" type="file" accept="image/png,image/webp,image/svg+xml" hidden />
       </section>
+      <div class="mobile-more-actions">
+        <strong>Export a záloha</strong>
+        <button type="button" id="mobile-export-all" class="primary">Exportovat celý carousel (.zip)</button>
+        <button type="button" id="mobile-download-project" class="ghost secondary">Zálohovat projekt (.json)</button>
+        <button type="button" id="mobile-import-project" class="ghost secondary">Obnovit projekt ze zálohy</button>
+      </div>
     </aside>
     <section class="workspace">
       <div class="workspace-top"><div><span class="eyebrow">NÁHLED V REÁLNÉM POMĚRU STRAN</span><h1 id="workspace-title">Narozeniny</h1></div><div class="export-actions"><button id="export-one" class="ghost">Uložit PNG</button><button id="export-all" class="primary">Export celého carouselu (.zip)</button></div></div>
@@ -83,6 +95,6 @@
   </main>
   <footer class="footer"><span>SceneLevel Studio · všechny fotky a koncepty se ukládají pouze v tomto prohlížeči</span><span>Bez účtu · bez placených služeb · v0.5</span></footer>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script>window.addEventListener('load',()=>{setTimeout(()=>{if(window.__SCENELEVEL_STUDIO_VERSION!=='0.5.0'){const a=document.createElement('div');a.textContent='Načetl se starší kód Studia. Obnov stránku pomocí Ctrl+Shift+R (na mobilu zavři a znovu otevři aplikaci).';a.style.cssText='position:fixed;z-index:99999;top:10px;left:10px;right:10px;border:2px solid #f97316;border-radius:10px;background:#24160f;color:#fff;padding:15px;font-size:14px';document.body.appendChild(a)}},750)}, {once:true});</script>
+  <script>window.addEventListener('load',()=>{setTimeout(()=>{if(window.__SCENELEVEL_STUDIO_VERSION!=='0.6.0'){const a=document.createElement('div');a.textContent='Načetl se starší kód Studia. Obnov stránku pomocí Ctrl+Shift+R (na mobilu zavři a znovu otevři aplikaci).';a.style.cssText='position:fixed;z-index:99999;top:10px;left:10px;right:10px;border:2px solid #f97316;border-radius:10px;background:#24160f;color:#fff;padding:15px;font-size:14px';document.body.appendChild(a)}},750)}, {once:true});</script>
 </body>
 </html>

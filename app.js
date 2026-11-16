@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '0.5.0';
+window.__SCENELEVEL_STUDIO_VERSION = '0.6.0';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
@@ -309,6 +309,7 @@ function renderFields(){
   $('photo-x').value=slide.x;$('photo-y').value=slide.y;$('background').value=safeColor(slide.bg);
 }
 function deleteSlideAt(i){
+  if(window.matchMedia('(max-width:740px)').matches && !window.confirm(`Smazat snímek ${i+1} z ${state.slides.length}?`))return;
   if(state.slides.length<=1){toast('V projektu musí zůstat alespoň jeden snímek.');return;}
   state.slides.splice(i,1);
   if(i<state.active)state.active--;
@@ -375,11 +376,11 @@ async function openProjectById(id){
     const upgraded=ensureNewsStructure(p);
     if(upgraded){p.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(p));}
     state=p;state.active=Math.max(0,Math.min(state.active||0,state.slides.length-1));
-    setScreen(true);syncUI();
+    setScreen(true);syncUI();setMobileTab('text');
     if(upgraded)toast('Starší novinka doplněna o informační snímek. Původní snímky zůstaly zachované.');
   }catch(e){console.error(e);toast('Projekt se nepodařilo otevřít.');}
 }
-async function createProject(template){try{const p=makeProject(template);ensureNewsStructure(p);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
+async function createProject(template){try{const p=makeProject(template);ensureNewsStructure(p);await transact('projects','readwrite',store=>store.put(p));state=p;setScreen(true);syncUI();setMobileTab('text');toast('Nový projekt vytvořen.');}catch(e){console.error(e);toast('Projekt nelze uložit. Zkontroluj volné místo v prohlížeči.');}}
 async function goHome(){try{await flushProject();}catch(e){console.error(e);toast('Poslední změny nemusely být uloženy. Stáhni si zálohu projektu.');return;}setScreen(false);await refreshDashboard();}
 async function removeProject(id){const p=projectList.find(item=>item.id===id);if(!p)return;if(!confirm(`Opravdu smazat projekt „${p.title}“? Smazání nelze vrátit.`))return;try{await transact('projects','readwrite',store=>store.delete(id));await refreshDashboard();toast('Projekt byl smazán.');}catch(e){console.error(e);toast('Projekt se nepodařilo smazat.');}}
 async function duplicateProject(id){const old=projectList.find(item=>item.id===id);if(!old)return;try{const copy=structuredClone(old);copy.id=makeId();copy.title=old.title+' (kopie)';copy.createdAt=copy.updatedAt=Date.now();await transact('projects','readwrite',store=>store.put(copy));await refreshDashboard();toast('Kopie projektu připravena.');}catch(e){console.error(e);toast('Projekt nelze duplikovat.');}}
@@ -434,8 +435,25 @@ function addSlideOfType(type){
   syncUI();scheduleSave();
   toast(type==='newsinfo'?'Přidán informační snímek před závěrečný CTA.':'Nový snímek byl přidán.');
 }
+function setMobileTab(tab){
+  const valid=['slides','text','photo','more'];if(!valid.includes(tab))tab='text';
+  $('editor').dataset.mobileTab=tab;
+  document.querySelectorAll('[data-mobile-tab]').forEach(button=>{
+    if(!button.closest('.mobile-tabs'))return;
+    const active=button.dataset.mobileTab===tab;
+    button.classList.toggle('active',active);
+    if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+  });
+  const sidebar=document.querySelector('#editor .sidebar');sidebar.scrollTop=0;
+  const workspace=document.querySelector('#editor .workspace');workspace.scrollTop=0;
+  if(tab==='slides')requestAnimationFrame(()=>{$('slide-strip').querySelector('.slide-item .active')?.scrollIntoView({block:'nearest',inline:'nearest'});});
+}
 function bind(){
   $('go-home').addEventListener('click',goHome);
+  document.querySelectorAll('.mobile-tabs [data-mobile-tab]').forEach(button=>button.addEventListener('click',()=>setMobileTab(button.dataset.mobileTab)));
+  $('mobile-export-all').addEventListener('click',()=>exportAll());
+  $('mobile-download-project').addEventListener('click',()=>$('project-download').click());
+  $('mobile-import-project').addEventListener('click',()=>$('project-import').click());
   $('dashboard').querySelectorAll('[data-create]').forEach(button=>button.addEventListener('click',()=>createProject(button.dataset.create)));
   $('project-title').addEventListener('input',e=>{state.title=e.target.value;scheduleSave();});
   $('format').addEventListener('change',e=>{state.format=e.target.value;queuePreview();scheduleSave();});
@@ -551,4 +569,4 @@ function writeZip(files){
   return new Blob([...local,...central,end],{type:'application/zip'});
 }
 async function exportAll(){const b=$('export-all');b.disabled=true;try{await flushProject();const files=[];for(let i=0;i<state.slides.length;i++){$('save-state').textContent=`Exportuji ${i+1}/${state.slides.length}…`;const png=await makePng(state.slides[i]);files.push({name:outputName(state.slides[i],i),data:new Uint8Array(await png.arrayBuffer())});}const zip=writeZip(files);downloadBlob(zip,`${slug(state.title)||'scenelevel'}-carousel.zip`);toast(`Hotovo: ${files.length} PNG snímků v ZIP archivu.`);}catch(e){console.error(e);toast('Export carouselu se nezdařil. Zkus exportovat snímky po jednom.');}finally{b.disabled=false;$('save-state').textContent='Uloženo v zařízení ✓';}}
-(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.5.0',{updateViaCache:'none'}).catch(()=>{});} })();
+(async function boot(){bind();try{await migratePreviousProject();}catch(e){console.warn('Storage migration failed',e);toast('Některé starší projekty se nepodařilo načíst; původní data jsme nesmazali.');}ready=true;setScreen(false);await refreshDashboard();initFonts();if('serviceWorker'in navigator&&location.protocol==='https:'){navigator.serviceWorker.register('./sw.js?v=0.6.0',{updateViaCache:'none'}).catch(()=>{});} })();
