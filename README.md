@@ -1,11 +1,10 @@
-# SceneLevel Studio v1.0
+# SceneLevel Studio v1.0.1 — oprava kontroly verze
 
-Statická aplikace pro GitHub Pages. Náhrada souborů z v0.9; bez změny schématu uložených projektů.
+Opraven nesoulad: v1.0 měla v `index.html` kontrolu na staré `0.9.0`, přestože `app.js` správně hlásil `1.0.0`. To způsobovalo falešné oranžové upozornění.
 
-## Změny
-- Informační snímky novinek: dynamicky počítaný začátek přechodu a pozice loga z délky textu. Krátký text = větší část fotografie; dlouhý text = více prostoru pro tmavé pozadí.
-- Běžné snímky: menší výchozí spodní okraj, rozložení více přiléhá k textu.
-- Na iPhonu v záložce Fotka přidáno nativní pole „podržet → Vložit“ jako alternativa k tlačítku. iOS Safari někdy kopíruje z Google obrázků pouze odkaz, ne fotku; ten není možné bezpečně vložit do exportovaného PNG kvůli CORS. Pak je potřeba uložit fotku do zařízení.
-- Nová verze cache, aby se nepletly styly a JavaScript mezi verzemi.
+- Kontrola v `index.html` a identifikátor v `app.js` mají nyní shodně `1.0.1`.
+- Aktualizovány odkazy na JS/CSS a cache service workeru, aby se verze nemíchaly.
+- Opraveno číslo verze v rozhraní.
+- Funkce a formát uložených projektů zůstaly stejné.
 
-Před nasazením proveď zálohu projektů. Nahraj obsah rozbalené složky do kořene GitHub repozitáře.
+Nasazení: celý obsah složky nahrát do kořene veřejného GitHub repozitáře scenelevel-studio. Data prohlížeče nemažte.

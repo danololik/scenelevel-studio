@@ -1,7 +1,7 @@
 'use strict';
 
 // SceneLevel Studio v0.5 – lightweight, local-only, dependency-free carousel editor.
-window.__SCENELEVEL_STUDIO_VERSION = '1.0.0';
+window.__SCENELEVEL_STUDIO_VERSION = '1.0.1';
 const $ = id => document.getElementById(id);
 const ORANGE = '#f97316';
 const DEFAULT_LOGO = './assets/logo_name_white.svg';
